@@ -14,13 +14,13 @@ KoreOS/
 │   ├── build.gradle.kts      # Shared module build config
 │   └── src/
 │       ├── commonMain/       # Common code for all platforms
-│       │   └── kotlin/com/koreos/
+│       │   └── kotlin/io/ygdrasil/koreos/
 │       │       └── Platform.kt # Common expect declarations
 │       ├── jvmMain/          # JVM-specific implementations
-│       │   └── kotlin/com/koreos/
+│       │   └── kotlin/io/ygdrasil/koreos/
 │       │       └── Platform.kt # JVM actual implementation
 │       ├── iosMain/          # iOS-specific implementations
-│       │   └── kotlin/com/koreos/
+│       │   └── kotlin/io/ygdrasil/koreos/
 │       │       └── Platform.kt # iOS actual implementation
 │       └── commonTest/       # Common tests
 └── gradlew*                  # Gradle wrapper scripts
@@ -39,12 +39,15 @@ The library uses Kotlin's `expect`/`actual` pattern for platform-specific implem
 
 ```kotlin
 // Common code (commonMain)
+package io.ygdrasil.koreos
 expect fun platformName(): String
 
 // JVM implementation (jvmMain)
+package io.ygdrasil.koreos
 actual fun platformName(): String = "JVM"
 
 // iOS implementation (iosMain)
+package io.ygdrasil.koreos
 actual fun platformName(): String = "iOS"
 ```
 

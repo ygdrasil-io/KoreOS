@@ -1,4 +1,4 @@
-package com.koreos
+package io.ygdrasil.koreos
 
 expect fun platformName(): String
 
