@@ -1,13 +1,22 @@
 # KoreOS - Kotlin Multiplatform Library
 
+[![Kotlin Multiplatform CI](https://github.com/ygdrasil-io/KoreOS/actions/workflows/kotlin-multiplatform.yml/badge.svg)](https://github.com/ygdrasil-io/KoreOS/actions/workflows/kotlin-multiplatform.yml)
+
 A Kotlin library for seamless, type-safe interaction with OS-specific APIs.
 
 ## Project Structure
 
 ```
 KoreOS/
+├── .github/
+│   └── workflows/            # GitHub Actions CI/CD
+│       └── kotlin-multiplatform.yml
 ├── build.gradle.kts          # Root build configuration
 ├── settings.gradle.kts        # Project settings
+├── detekt.yml                # Code quality configuration
+├── demo/                     # Demo application
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/io/ygdrasil/koreos/Demo.kt
 ├── gradle/
 │   └── wrapper/              # Gradle wrapper
 ├── shared/
@@ -15,14 +24,26 @@ KoreOS/
 │   └── src/
 │       ├── commonMain/       # Common code for all platforms
 │       │   └── kotlin/io/ygdrasil/koreos/
-│       │       └── Platform.kt # Common expect declarations
+│       │       ├── Platform.kt # Common expect declarations & enums
+│       │       └── PlatformType.kt
 │       ├── jvmMain/          # JVM-specific implementations
 │       │   └── kotlin/io/ygdrasil/koreos/
-│       │       └── Platform.kt # JVM actual implementation
+│       │       └── PlatformJvm.kt # JVM actual implementation
 │       ├── iosMain/          # iOS-specific implementations
 │       │   └── kotlin/io/ygdrasil/koreos/
 │       │       └── Platform.kt # iOS actual implementation
+│       ├── androidMain/      # Android-specific implementations
+│       │   └── kotlin/io/ygdrasil/koreos/
+│       │       └── Platform.kt # Android actual implementation
+│       ├── jsMain/           # JavaScript-specific implementations
+│       │   └── kotlin/io/ygdrasil/koreos/
+│       │       └── Platform.kt # JS actual implementation
+│       ├── linuxMain/        # Linux-specific implementations
+│       │   └── kotlin/io/ygdrasil/koreos/
+│       │       └── Platform.kt # Linux actual implementation
 │       └── commonTest/       # Common tests
+│           └── kotlin/io/ygdrasil/koreos/
+│               └── PlatformTest.kt
 └── gradlew*                  # Gradle wrapper scripts
 ```
 
@@ -65,10 +86,26 @@ To add support for additional platforms:
 2. Create the corresponding source set directory (e.g., `jsMain`)
 3. Implement the `actual` declarations for that platform
 
-## Next Steps
+## Status
 
-- Add Android platform support
-- Add JavaScript platform support
-- Implement core OS API wrappers
-- Add comprehensive testing
-- Set up CI/CD pipeline
+### ✅ Completed
+- Android platform support
+- JavaScript platform support  
+- Linux platform support
+- Core OS API wrappers with type-safe enums
+- Comprehensive unit tests
+- CI/CD pipeline with GitHub Actions
+- Code quality tools (ktlint, detekt, Jacoco)
+
+### 🚀 Current Focus
+- Finalizing CI/CD configuration
+- Platform-specific test implementation
+- Enhanced CPU architecture detection
+- Extended system information APIs
+
+### 📋 Roadmap
+- Memory and CPU usage monitoring
+- Disk storage information
+- Network status and interfaces
+- Battery monitoring (mobile)
+- Production-ready release (v1.0.0)
