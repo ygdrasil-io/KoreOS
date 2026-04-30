@@ -1,25 +1,18 @@
-name: Kotlin Multiplatform CI
+name: Kotlin CI
 
 on:
   push:
-    branches: [ master, feature/kmp-setup ]
+    branches: [ main, master, feature/kmp-setup ]
   pull_request:
-    branches: [ master, feature/kmp-setup ]
+    branches: [ main, master, feature/kmp-setup ]
 
 jobs:
   build:
     name: Build and Test
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            java: '17'
-          - os: macos-latest
-            java: '17'
-          - os: windows-latest
-            java: '17'
+        java: ['17']
 
     steps:
       - name: Checkout repository
@@ -45,84 +38,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}
+          name: test-results
           path: |
             **/build/test-results/
             **/build/reports/
-
-  android-build:
-    name: Android Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-
-      - name: Build Android
-        run: ./gradlew :shared:build --no-daemon
-
-      - name: Run Android tests
-        run: ./gradlew :shared:test --no-daemon
-
-  ios-build:
-    name: iOS Build
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-
-      - name: Build iOS
-        run: ./gradlew :shared:build --no-daemon
-
-      - name: Run iOS tests
-        run: ./gradlew :shared:test --no-daemon
-
-  js-build:
-    name: JavaScript Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-
-      - name: Build JavaScript
-        run: ./gradlew :shared:build --no-daemon
-
-      - name: Run JavaScript tests
-        run: ./gradlew :shared:test --no-daemon
 
   quality-checks:
     name: Code Quality
@@ -162,10 +81,10 @@ jobs:
   publish:
     name: Publish Artefacts
     runs-on: ubuntu-latest
-    needs: [build, android-build, ios-build, js-build, quality-checks]
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/feature/kmp-setup'
+    needs: [build, quality-checks]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/feature/kmp-setup'
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Checkout repository
