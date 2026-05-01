@@ -1,5 +1,6 @@
 plugins {
-    kotlin("multiplatform")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.dokka)
 }
 
 repositories {
@@ -18,7 +19,7 @@ kotlin {
         
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
+                implementation(libs.kotlin.test)
             }
         }
         

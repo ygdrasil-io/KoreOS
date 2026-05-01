@@ -1,7 +1,9 @@
 plugins {
-    kotlin("multiplatform") version "2.3.20"
-    id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
-    id("io.gitlab.arturbosch.detekt") version "1.23.1"
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.dokka) apply false
     id("jacoco")
 }
 
