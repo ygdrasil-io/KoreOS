@@ -38,3 +38,4 @@ local.properties
 # CocoaPods
 Pods/
 Podfile.lock
+/.zed/
