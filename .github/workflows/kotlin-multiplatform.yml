@@ -2,9 +2,9 @@ name: Kotlin Multiplatform CI
 
 on:
   push:
-    branches: [ feature/*, fix/*, main ]
+    branches: [ feature/*, fix/*, master ]
   pull_request:
-    branches: [ feature/*, fix/*, main ]
+    branches: [ feature/*, fix/*, master ]
 
 jobs:
   build:
