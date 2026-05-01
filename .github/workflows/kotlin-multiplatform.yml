@@ -1,4 +1,4 @@
-name: Kotlin Multiplatform CI
+name: Kotlin CI
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build and Test
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -66,4 +66,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: koreos-documentation
-          path: 'build/dokka/**'
+          path: '**/build/dokka/**'
