@@ -63,7 +63,7 @@ jobs:
         run: ./gradlew dokkaGenerateHtml --no-daemon
 
       - name: Upload documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: koreos-documentation
           path: 'build/dokka/**'
