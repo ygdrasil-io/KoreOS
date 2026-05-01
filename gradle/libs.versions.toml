@@ -2,6 +2,7 @@
 kotlin = "2.3.20"
 ktlint = "11.6.1"
 detekt = "1.23.1"
+dokka = "2.2.0"
 
 [libraries]
 # Pas encore de librairies externes complexes, mais on peut préparer
@@ -12,3 +13,4 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

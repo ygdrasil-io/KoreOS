@@ -60,7 +60,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Generate Dokka documentation
-        run: ./gradlew dokkaHtml --no-daemon
+        run: ./gradlew dokkaGenerateHtml --no-daemon
 
       - name: Upload documentation
         uses: actions/upload-artifact@v3
