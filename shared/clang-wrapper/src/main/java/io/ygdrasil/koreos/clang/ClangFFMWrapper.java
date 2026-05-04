@@ -104,6 +104,7 @@ public final class ClangFFMWrapper {
                 try {
                     clangLib = loader.find(libName).orElse(null);
                     if (clangLib != null) {
+                        System.out.println("Found libclang via default lookup: " + libName);
                         break;
                     }
                 } catch (Exception e) {
@@ -122,6 +123,10 @@ public final class ClangFFMWrapper {
                     "/usr/lib/llvm-17/lib/libclang.so.17",
                     "/usr/lib/llvm-17/lib/libclang.so.1",
                     "/usr/lib/llvm-17/lib/libclang.so",
+                    // Ubuntu/Debian LLVM 18+
+                    "/usr/lib/llvm-18/lib/libclang.so",
+                    "/usr/lib/llvm-19/lib/libclang.so",
+                    "/usr/lib/llvm-20/lib/libclang.so",
                     // System-wide
                     "/usr/lib/libclang.so.17",
                     "/usr/lib/libclang.so.1",
@@ -132,6 +137,7 @@ public final class ClangFFMWrapper {
                 for (String path : knownPaths) {
                     try {
                         if (Files.exists(Path.of(path))) {
+                            System.out.println("Trying known path: " + path);
                             // Load the library and get its symbol lookup
                             SymbolLookup libLookup = SymbolLookup.libraryLookup(Path.of(path), libArena);
                             // Check that all required symbols exist in this library
@@ -142,6 +148,7 @@ public final class ClangFFMWrapper {
                                 clangLib = libLookup.find("clang_createIndex").orElse(null);
                                 // Switch to using this library's lookup for all symbols
                                 loader = libLookup;
+                                System.out.println("Loaded libclang from: " + path);
                                 break;
                             }
                         }
