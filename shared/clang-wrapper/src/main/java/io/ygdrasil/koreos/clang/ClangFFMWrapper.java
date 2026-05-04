@@ -85,7 +85,8 @@ public final class ClangFFMWrapper {
 
         try {
             linker = Linker.nativeLinker();
-            libArena = Arena.ofAuto();
+            // Use a global arena that lives for the entire JVM lifetime
+            libArena = Arena.global();
             SymbolLookup loader = linker.defaultLookup();
 
             // Try multiple library names for cross-platform support
