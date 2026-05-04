@@ -316,12 +316,11 @@ object ClangFFMWrapper {
             // Allocate array of pointers for command line args
             val argsArray = arena.allocate(ValueLayout.ADDRESS, commandLineArgs.size.toLong())
             for (i in commandLineArgs.indices) {
-                commandLineArgs[i]?.let { argValue ->
-                    // Allocate memory for the string (+1 for null terminator)
-                    val arg = arena.allocate(argValue.length + 1L)
-                    arg.setString(0, argValue, StandardCharsets.UTF_8)
-                    argsArray.setAtIndex(ValueLayout.ADDRESS, i.toLong(), arg)
-                }
+                // Allocate memory for the string (+1 for null terminator)
+                val argValue = commandLineArgs[i]
+                val arg = arena.allocate(argValue.length + 1L)
+                arg.setString(0, argValue, StandardCharsets.UTF_8)
+                argsArray.setAtIndex(ValueLayout.ADDRESS, i.toLong(), arg)
             }
 
             // Allocate memory for source file path
