@@ -80,10 +80,7 @@ jobs:
           name: test-results-${{ matrix.os }}
           path: |
             '**/build/test-results/**'
-            'crash-diagnostics/'
-            '**/hs_err_pid*.log'
-            '**/core.*'
-            '**/*.hprof'
+            '/home/runner/work/KoreOS/KoreOS/shared/clang-wrapper/hs_err_*.log'
 
   documentation:
     name: Generate Documentation
