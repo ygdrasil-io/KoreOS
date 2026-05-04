@@ -38,13 +38,12 @@ class SourceLocation(
         }
         this.handle = handle
 
-        // TODO: GRA-4 - Implement actual extraction from handle
-        // For now, use placeholder values
-        // This will be implemented using clang_getFileLocation, clang_getExpansionLocation, etc.
-        this.file = null
-        this.line = 0
-        this.column = 0
-        this.offset = 0
+        // Extract actual data from the location handle
+        val locationData = ClangFFMWrapper.extractLocationData(handle)
+        this.file = locationData?.file
+        this.line = locationData?.line ?: 0
+        this.column = locationData?.column ?: 0
+        this.offset = (locationData?.offset ?: 0L).toInt()
     }
 
     /**

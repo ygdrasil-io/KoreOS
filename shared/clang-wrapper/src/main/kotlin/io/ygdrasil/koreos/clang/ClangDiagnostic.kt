@@ -40,9 +40,7 @@ class ClangDiagnostic(
      * @return The Severity of this diagnostic
      */
     fun getSeverity(): Severity {
-        // TODO: GRA-4 - Implement using clang_getDiagnosticSeverity
-        // For now, return UNKNOWN to make tests compile
-        return Severity.UNKNOWN
+        return ClangFFMWrapper.getDiagnosticSeverityFromHandle(handle)
     }
 
     /**
@@ -51,8 +49,7 @@ class ClangDiagnostic(
      * @return The diagnostic message
      */
     fun getMessage(): String {
-        // TODO: GRA-4 - Implement using clang_getDiagnosticSpelling
-        return ""
+        return ClangFFMWrapper.getDiagnosticSpellingFromHandle(handle)
     }
 
     /**
@@ -61,8 +58,8 @@ class ClangDiagnostic(
      * @return The SourceLocation of this diagnostic
      */
     fun getLocation(): SourceLocation {
-        // TODO: GRA-4 - Implement using clang_getDiagnosticLocation
-        return SourceLocation(handle)
+        val locationHandle = ClangFFMWrapper.getDiagnosticLocationFromHandle(handle)
+        return SourceLocation(locationHandle)
     }
 
     /**
@@ -71,8 +68,7 @@ class ClangDiagnostic(
      * @return The category string
      */
     fun getCategory(): String {
-        // TODO: GRA-4 - Implement using clang_getDiagnosticCategory
-        return ""
+        return ClangFFMWrapper.getDiagnosticCategoryFromHandle(handle)
     }
 
     /**
@@ -82,8 +78,7 @@ class ClangDiagnostic(
      * @return The option string
      */
     fun getOption(): String {
-        // TODO: GRA-4 - Implement using clang_getDiagnosticOption
-        return ""
+        return ClangFFMWrapper.getDiagnosticOptionFromHandle(handle)
     }
 
     /**

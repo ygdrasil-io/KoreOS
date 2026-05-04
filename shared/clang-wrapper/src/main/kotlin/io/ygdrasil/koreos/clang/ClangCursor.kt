@@ -40,10 +40,7 @@ class ClangCursor(
      * @return The CursorKind representing the type of this cursor
      */
     fun getKind(): CursorKind {
-        // TODO: GRA-4 - Implement using clang_getCursorKind
-        // For now, return UNKNOWN to make tests compile
-        // Actual implementation: val kind = clang_getCursorKind.invoke(handle) as Int
-        return CursorKind.UNKNOWN
+        return ClangFFMWrapper.getCursorKindFromHandle(handle)
     }
 
     /**
@@ -53,9 +50,7 @@ class ClangCursor(
      * @return The spelling as a String
      */
     fun getSpelling(): String {
-        // TODO: GRA-4 - Implement using clang_getCursorSpelling
-        // For now, return empty string to make tests compile
-        return ""
+        return ClangFFMWrapper.getCursorSpellingFromHandle(handle)
     }
 
     /**
@@ -64,9 +59,8 @@ class ClangCursor(
      * @return The SourceLocation of this cursor
      */
     fun getLocation(): SourceLocation {
-        // TODO: GRA-4 - Implement using clang_getCursorLocation
-        // For now, return a placeholder location
-        return SourceLocation(handle)
+        val locationHandle = ClangFFMWrapper.getCursorLocationFromHandle(handle)
+        return SourceLocation(locationHandle)
     }
 
     /**
@@ -76,8 +70,12 @@ class ClangCursor(
      * @return The semantic parent cursor, or null if none
      */
     fun getSemanticParent(): ClangCursor? {
-        // TODO: GRA-4 - Implement using clang_getCursorSemanticParent
-        return null
+        val parentHandle = ClangFFMWrapper.getCursorSemanticParentFromHandle(handle)
+        return if (parentHandle == MemorySegment.NULL) {
+            null
+        } else {
+            ClangCursor(parentHandle)
+        }
     }
 
     /**
@@ -86,9 +84,8 @@ class ClangCursor(
      * @return List of child cursors
      */
     fun getChildren(): List<ClangCursor> {
-        // TODO: GRA-4 - Implement using clang_getCursorChildren
-        // For now, return empty list to make tests compile
-        return emptyList()
+        val childrenHandles = ClangFFMWrapper.getCursorChildrenFromHandle(handle)
+        return childrenHandles.map { ClangCursor(it) }
     }
 
     /**
@@ -98,8 +95,7 @@ class ClangCursor(
      * @return The USR string, or empty string if none
      */
     fun getUSR(): String {
-        // TODO: GRA-4 - Implement using clang_getCursorUSR
-        return ""
+        return ClangFFMWrapper.getCursorUSRFromHandle(handle)
     }
 
     /**
