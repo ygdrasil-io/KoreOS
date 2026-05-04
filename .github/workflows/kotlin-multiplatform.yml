@@ -15,6 +15,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
+    env:
+      LIBCLANG_DISABLE_CRASH_RECOVERY: 1
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -58,18 +61,35 @@ jobs:
           # Find the actual LLVM installation path
           $llvmPath = "C:\Program Files\LLVM"
           if (Test-Path "$llvmPath\bin\clang.exe") {
+            echo "Found LLVM at: $llvmPath"
             echo "LLVM_PATH=$llvmPath" >> $env:GITHUB_ENV
             echo "$llvmPath\bin" >> $env:GITHUB_PATH
           } else {
             # Try alternative path
             $llvmPath = "C:\Program Files (x86)\LLVM"
             if (Test-Path "$llvmPath\bin\clang.exe") {
+              echo "Found LLVM at: $llvmPath"
               echo "LLVM_PATH=$llvmPath" >> $env:GITHUB_ENV
               echo "$llvmPath\bin" >> $env:GITHUB_PATH
+            } else {
+              echo "ERROR: LLVM not found in expected locations!"
+              Get-ChildItem -Path "C:\" -Recurse -Filter "clang.exe" -ErrorAction SilentlyContinue | Select-Object -First 10 | ForEach-Object { echo "Found clang.exe at: $($_.FullName)" }
             }
           }
+          # Check if libclang.dll exists
+          if (Test-Path "$llvmPath\lib\libclang.dll") {
+            echo "Found libclang.dll at: $llvmPath\lib\libclang.dll"
+          } elseif (Test-Path "$llvmPath\bin\libclang.dll") {
+            echo "Found libclang.dll at: $llvmPath\bin\libclang.dll"
+          } else {
+            echo "WARNING: libclang.dll not found in $llvmPath\lib or $llvmPath\bin"
+            Get-ChildItem -Path "$llvmPath" -Recurse -Filter "libclang*.dll" -ErrorAction SilentlyContinue | ForEach-Object { echo "Found: $($_.FullName)" }
+          }
+          # Set java.library.path to include both lib and bin directories
+          echo "JAVA_LIBRARY_PATH=$llvmPath\lib;$llvmPath\bin;${{ env.JAVA_LIBRARY_PATH }}" >> $env:GITHUB_ENV
           # Disable libclang crash recovery to prevent JVM signal handler conflicts
           echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1" >> $env:GITHUB_ENV
+          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1"
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
@@ -77,11 +97,13 @@ jobs:
       - name: Build with Gradle
         env:
           LIBCLANG_DISABLE_CRASH_RECOVERY: 1
+          JAVA_LIBRARY_PATH: ${{ env.JAVA_LIBRARY_PATH }}
         run: ./gradlew build --no-daemon
 
       - name: Run tests
         env:
           LIBCLANG_DISABLE_CRASH_RECOVERY: 1
+          JAVA_LIBRARY_PATH: ${{ env.JAVA_LIBRARY_PATH }}
         run: ./gradlew test --no-daemon
 
       - name: Collect crash diagnostics

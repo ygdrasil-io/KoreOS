@@ -97,34 +97,37 @@ public final class ClangFFMWrapper {
         }
 
         try {
+            System.out.println("[ClangFFMWrapper] Starting initialization...");
+            System.out.println("[ClangFFMWrapper] java.library.path: " + System.getProperty("java.library.path"));
+            System.out.println("[ClangFFMWrapper] Current working directory: " + System.getProperty("user.dir"));
+            
             SymbolLookup loader = linker.defaultLookup();
 
-            // Try multiple library names for cross-platform support
-            String[] libNames = {
-                // Linux (versioned) - try multiple versions
-                "libclang.so.20", "libclang.so.19", "libclang.so.18", "libclang.so.17", "libclang.so.1", 
-                // Linux (unversioned)
-                "libclang.so",
-                // macOS
-                "libclang.dylib",
-                // Windows
-                "libclang.dll", "clang.dll"
-            };
+            // First, try System.loadLibrary() with standard library names.
+            // This uses the system library loader which respects PATH/LD_LIBRARY_PATH/DYLD_LIBRARY_PATH
+            String[] libNames = {"clang", "libclang"};
             
+            System.out.println("[ClangFFMWrapper] Trying System.loadLibrary()...");
             for (String libName : libNames) {
                 try {
-                    clangLib = loader.find(libName).orElse(null);
+                    System.loadLibrary(libName);
+                    System.out.println("[ClangFFMWrapper] Successfully loaded libclang via System.loadLibrary: " + libName);
+                    // Verify we can find a symbol
+                    clangLib = loader.find("clang_createIndex").orElse(null);
                     if (clangLib != null) {
-                        System.out.println("Found libclang via default lookup: " + libName);
+                        System.out.println("[ClangFFMWrapper] Found clang_createIndex symbol");
                         break;
+                    } else {
+                        System.out.println("[ClangFFMWrapper] Library loaded but clang_createIndex symbol not found");
                     }
-                } catch (Exception e) {
-                    // Try next library name
+                } catch (UnsatisfiedLinkError | SecurityException e) {
+                    System.out.println("[ClangFFMWrapper] System.loadLibrary failed for " + libName + ": " + e.getMessage());
                 }
             }
 
-            // If not found, try loading from known paths using libraryLookup
+            // If not found, try loading from known paths
             if (clangLib == null) {
+                System.out.println("[ClangFFMWrapper] Library not found via System.loadLibrary, trying known paths...");
                 String[] knownPaths = {
                     // Homebrew (macOS)
                     "/opt/homebrew/opt/llvm/lib/libclang.dylib",
@@ -142,8 +145,9 @@ public final class ClangFFMWrapper {
                     "/usr/lib/libclang.so.17",
                     "/usr/lib/libclang.so.1",
                     "/usr/lib/libclang.so",
-                    // Windows LLVM
-                    "C:\\Program Files\\LLVM\\lib\\libclang.dll"
+                    // Windows LLVM - check both lib and bin directories
+                    "C:\\Program Files\\LLVM\\lib\\libclang.dll",
+                    "C:\\Program Files\\LLVM\\bin\\libclang.dll"
                 };
                 for (String path : knownPaths) {
                     try {
@@ -189,7 +193,9 @@ public final class ClangFFMWrapper {
                 throw new ClangInitializationException(
                     "Failed to load libclang library. " +
                     "Ensure LLVM/Clang 17+ is installed. " +
-                    "Tried: " + String.join(", ", libNames));
+                    "Tried System.loadLibrary with: " + String.join(", ", libNames) + 
+                    ", and known paths including Windows LLVM lib and bin directories. " +
+                    "Check java.library.path and PATH environment variables.");
             }
 
             // Resolve required function symbols

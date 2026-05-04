@@ -38,8 +38,10 @@ tasks.withType<Test> {
         nativeArgs.add("-Djava.library.path=$ldPath")
     } else if (os.contains("win")) {
         // On Windows, use PATH and java.library.path
-        val llvmPath = System.getenv("LLVM_PATH") ?: "C:\\Program Files\\LLVM"
-        nativeArgs.add("-Djava.library.path=$llvmPath\\lib")
+        // Check JAVA_LIBRARY_PATH first (set by GitHub Actions), then LLVM_PATH
+        val javaLibPath = System.getenv("JAVA_LIBRARY_PATH")
+            ?: (System.getenv("LLVM_PATH")?.let { "$it\\lib;$it\\bin" } ?: "C:\\Program Files\\LLVM\\lib;C:\\Program Files\\LLVM\\bin")
+        nativeArgs.add("-Djava.library.path=$javaLibPath")
     }
     
     jvmArgs = nativeArgs
