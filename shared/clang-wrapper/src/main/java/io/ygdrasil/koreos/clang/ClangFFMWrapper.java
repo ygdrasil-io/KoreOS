@@ -89,8 +89,16 @@ public final class ClangFFMWrapper {
             SymbolLookup loader = linker.defaultLookup();
 
             // Try multiple library names for cross-platform support
-            String[] libNames = {"libclang.so.17", "libclang.so.1", "libclang.so", 
-                                "libclang.dylib", "clang.dll"};
+            String[] libNames = {
+                // Linux (versioned)
+                "libclang.so.17", "libclang.so.18", "libclang.so.1", 
+                // Linux (unversioned)
+                "libclang.so",
+                // macOS
+                "libclang.dylib",
+                // Windows
+                "clang.dll", "libclang.dll"
+            };
             
             for (String libName : libNames) {
                 try {
@@ -106,11 +114,20 @@ public final class ClangFFMWrapper {
             // If not found, try loading from known paths
             if (clangLib == null) {
                 String[] knownPaths = {
+                    // Homebrew (macOS)
                     "/opt/homebrew/opt/llvm/lib/libclang.dylib",
+                    // Apple Clang
                     "/Library/Developer/CommandLineTools/usr/lib/libclang.dylib",
-                    "/usr/lib/libclang.so.17",
+                    // Ubuntu/Debian LLVM 17
+                    "/usr/lib/llvm-17/lib/libclang.so.17",
                     "/usr/lib/llvm-17/lib/libclang.so.1",
-                    "/usr/lib/llvm-17/lib/libclang.so"
+                    "/usr/lib/llvm-17/lib/libclang.so",
+                    // System-wide
+                    "/usr/lib/libclang.so.17",
+                    "/usr/lib/libclang.so.1",
+                    "/usr/lib/libclang.so",
+                    // Windows LLVM
+                    "C:\\Program Files\\LLVM\\lib\\libclang.dll"
                 };
                 for (String path : knownPaths) {
                     try {
