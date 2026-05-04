@@ -90,14 +90,14 @@ public final class ClangFFMWrapper {
 
             // Try multiple library names for cross-platform support
             String[] libNames = {
-                // Linux (versioned)
-                "libclang.so.17", "libclang.so.18", "libclang.so.1", 
+                // Linux (versioned) - try multiple versions
+                "libclang.so.20", "libclang.so.19", "libclang.so.18", "libclang.so.17", "libclang.so.1", 
                 // Linux (unversioned)
                 "libclang.so",
                 // macOS
                 "libclang.dylib",
                 // Windows
-                "clang.dll", "libclang.dll"
+                "libclang.dll", "clang.dll"
             };
             
             for (String libName : libNames) {

@@ -42,10 +42,10 @@ jobs:
           echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
           echo "DYLD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${{ env.DYLD_LIBRARY_PATH }}" >> $GITHUB_ENV
 
-      - name: Install LLVM Clang 17 (Windows)
+      - name: Install LLVM Clang (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install llvm -y --version=17.0.0
+          choco install llvm -y
           echo "LLVM_PATH=C:\Program Files\LLVM" >> $GITHUB_ENV
 
       - name: Setup Gradle
