@@ -32,35 +32,36 @@
 ### Phase 1: Préparation
 - [x] Plan créé
 - [x] Branche créée
-- [ ] Documentation libclang lue
-- [ ] Structure des tests créée
+- [x] Documentation libclang lue
+- [x] Structure des tests créée
 
 ### Phase 2: TDD - RED (Tests d'abord)
-- [ ] Tests CursorKind
-- [ ] Tests Severity
-- [ ] Tests SourceLocation
-- [ ] Tests ClangCursor.getKind()
-- [ ] Tests ClangCursor.getSpelling()
-- [ ] Tests ClangCursor.getChildren()
-- [ ] Tests ClangCursor.getLocation()
-- [ ] Tests ClangCursor.getSemanticParent()
-- [ ] Tests ClangDiagnostic.getSeverity()
-- [ ] Tests ClangDiagnostic.getMessage()
-- [ ] Tests ClangDiagnostic.getLocation()
-- [ ] Tests parcours AST
+- [x] Tests CursorKind
+- [x] Tests Severity
+- [x] Tests SourceLocation
+- [x] Tests ClangCursor.getKind()
+- [x] Tests ClangCursor.getSpelling()
+- [x] Tests ClangCursor.getChildren()
+- [x] Tests ClangCursor.getLocation()
+- [x] Tests ClangCursor.getSemanticParent()
+- [x] Tests ClangDiagnostic.getSeverity()
+- [x] Tests ClangDiagnostic.getMessage()
+- [x] Tests ClangDiagnostic.getLocation()
+- [x] Tests parcours AST
 
 ### Phase 3: TDD - GREEN (Code minimal)
-- [ ] CursorKind implémenté
-- [ ] Severity implémenté
-- [ ] SourceLocation implémenté
-- [ ] ClangCursor.getKind()
-- [ ] ClangCursor.getSpelling()
-- [ ] ClangCursor.getChildren()
-- [ ] ClangCursor.getLocation()
-- [ ] ClangDiagnostic.getSeverity()
-- [ ] ClangDiagnostic.getMessage()
-- [ ] ClangDiagnostic.getLocation()
-- [ ] Parcours AST
+- [x] CursorKind implémenté
+- [x] Severity implémenté
+- [x] SourceLocation implémenté
+- [x] ClangCursor.getKind()
+- [x] ClangCursor.getSpelling()
+- [x] ClangCursor.getChildren()
+- [x] ClangCursor.getLocation()
+- [x] ClangDiagnostic.getSeverity()
+- [x] ClangCursor.getSemanticParent()
+- [x] ClangDiagnostic.getMessage()
+- [x] ClangDiagnostic.getLocation()
+- [x] Parcours AST (traverse, findAll)
 
 ### Phase 4: TDD - REFACTOR
 - [ ] Refactoring ClangCursor
