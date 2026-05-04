@@ -27,6 +27,7 @@ tasks.withType<Test> {
     val os = System.getProperty("os.name").lowercase()
     val nativeArgs = mutableListOf("--enable-native-access=ALL-UNNAMED")
     
+    // Set library path - must be passed via environment for native linker to work
     if (os.contains("mac") || os.contains("darwin")) {
         val dyldPath = System.getenv("DYLD_LIBRARY_PATH") ?: "/opt/homebrew/opt/llvm/lib"
         environment("DYLD_LIBRARY_PATH", dyldPath)
