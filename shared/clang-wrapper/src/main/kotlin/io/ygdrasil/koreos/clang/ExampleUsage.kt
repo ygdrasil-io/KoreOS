@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 package io.ygdrasil.koreos.clang
 
-import java.io.IOException
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -15,7 +13,7 @@ import java.nio.file.StandardCopyOption
  * 3. Parse a C source file
  * 4. Get diagnostics information
  * 5. Properly dispose resources
- * 
+ *
  * Part of GRA-2: Basic implementation of libclang wrapper with FFM.
  */
 object ExampleUsage {
@@ -34,7 +32,7 @@ object ExampleUsage {
         }
 
         println("Parsing C file: $cFilePath")
-        
+
         try {
             // Step 1: Initialize the FFM wrapper
             println("\n1. Initializing Clang FFM wrapper...")
@@ -64,7 +62,6 @@ object ExampleUsage {
                     println("\n✓ Example completed successfully!")
                 }
             }
-
         } catch (e: ClangInitializationException) {
             System.err.println("Initialization failed: " + e.message)
             System.err.println("Ensure Java 21+ and LLVM/Clang 17+ are installed.")
@@ -102,7 +99,7 @@ object ExampleUsage {
             val tempFile = Files.createTempFile("clang-wrapper-example-", ".c")
             ExampleUsage::class.java.getResourceAsStream("/examples/example.c").use { inputStream ->
                 if (inputStream == null) {
-                    throw IOException("example.c not found in resources")
+                    throw java.io.IOException("example.c not found in resources")
                 }
                 Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING)
             }

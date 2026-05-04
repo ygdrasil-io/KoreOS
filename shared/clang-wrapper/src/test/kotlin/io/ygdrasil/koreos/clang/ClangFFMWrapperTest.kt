@@ -2,12 +2,15 @@
 package io.ygdrasil.koreos.clang
 
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.lang.foreign.MemorySegment
-
-import org.junit.jupiter.api.Assertions.*
 
 /**
  * Tests for ClangFFMWrapper.
@@ -30,8 +33,10 @@ class ClangFFMWrapperTest {
 
     @Test
     fun testIsFFMSupported() {
-        assertTrue(ClangFFMWrapper.isFFMSupported(), 
-            "FFM should be supported on Java 21+")
+        assertTrue(
+            ClangFFMWrapper.isFFMSupported(),
+            "FFM should be supported on Java 21+"
+        )
     }
 
     @Test

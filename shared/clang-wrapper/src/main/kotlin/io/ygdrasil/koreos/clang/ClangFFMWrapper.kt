@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 package io.ygdrasil.koreos.clang
 
-import java.lang.foreign.*
+import java.lang.foreign.Arena
+import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.Linker
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.SymbolLookup
+import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -17,7 +22,7 @@ object ClangFFMWrapper {
     private var initialized = false
     private var clangLib: MemorySegment? = null
     private val linker = Linker.nativeLinker()
-    
+
     // Use a global arena that lives for the entire JVM lifetime
     // This prevents use-after-free issues during JVM shutdown
     private val libArena = Arena.global()
@@ -35,7 +40,7 @@ object ClangFFMWrapper {
     private val CREATE_INDEX_DESC = FunctionDescriptor.of(
         ValueLayout.ADDRESS, // CXIndex*
         ValueLayout.JAVA_INT, // excludeDeclsFromPCH (int, treated as bool)
-        ValueLayout.JAVA_INT  // displayDiagnostics (int, treated as bool)
+        ValueLayout.JAVA_INT // displayDiagnostics (int, treated as bool)
     )
 
     private val PARSE_TU_DESC = FunctionDescriptor.of(
@@ -46,7 +51,7 @@ object ClangFFMWrapper {
         ValueLayout.JAVA_INT, // num_command_line_args (int)
         ValueLayout.ADDRESS, // unsaved_files (CXUnsavedFile*)
         ValueLayout.JAVA_INT, // num_unsaved_files (unsigned)
-        ValueLayout.JAVA_INT  // options (unsigned)
+        ValueLayout.JAVA_INT // options (unsigned)
     )
 
     private val DISPOSE_INDEX_DESC = FunctionDescriptor.ofVoid(
@@ -59,7 +64,7 @@ object ClangFFMWrapper {
 
     private val GET_NUM_DIAG_DESC = FunctionDescriptor.of(
         ValueLayout.JAVA_INT, // unsigned int
-        ValueLayout.ADDRESS  // CXTranslationUnit*
+        ValueLayout.ADDRESS // CXTranslationUnit*
     )
 
     /**
@@ -95,20 +100,21 @@ object ClangFFMWrapper {
 
         if (!isFFMSupported()) {
             throw ClangInitializationException(
-                "FFM requires Java 21+. Current version: " + Runtime.version())
+                "FFM requires Java 21+. Current version: " + Runtime.version()
+            )
         }
 
         try {
             println("[ClangFFMWrapper] Starting initialization...")
             println("[ClangFFMWrapper] java.library.path: " + System.getProperty("java.library.path"))
             println("[ClangFFMWrapper] Current working directory: " + System.getProperty("user.dir"))
-            
+
             var loader = linker.defaultLookup()
 
             // First, try System.loadLibrary() with standard library names.
             // This uses the system library loader which respects PATH/LD_LIBRARY_PATH/DYLD_LIBRARY_PATH
             val libNames = arrayOf("clang", "libclang")
-            
+
             println("[ClangFFMWrapper] Trying System.loadLibrary()...")
             for (libName in libNames) {
                 try {
@@ -153,7 +159,7 @@ object ClangFFMWrapper {
                     "C:\\Program Files\\LLVM\\lib\\libclang.dll",
                     "C:\\Program Files\\LLVM\\bin\\libclang.dll"
                 )
-                
+
                 for (path in knownPaths) {
                     try {
                         if (Files.exists(Path.of(path))) {
@@ -176,14 +182,15 @@ object ClangFFMWrapper {
                                 // Fall back to SymbolLookup.libraryLookup
                                 println("System.load failed, trying libraryLookup: " + e.message)
                             }
-                            
+
                             // Fallback: use libraryLookup
                             val libLookup = SymbolLookup.libraryLookup(Path.of(path), libArena)
                             // Check that all required symbols exist in this library
                             if (libLookup.find("clang_createIndex").isPresent &&
                                 libLookup.find("clang_parseTranslationUnit").isPresent &&
                                 libLookup.find("clang_disposeIndex").isPresent &&
-                                libLookup.find("clang_disposeTranslationUnit").isPresent) {
+                                libLookup.find("clang_disposeTranslationUnit").isPresent
+                            ) {
                                 clangLib = libLookup.find("clang_createIndex").orElse(null)
                                 loader = libLookup
                                 println("Loaded libclang from: $path")
@@ -199,18 +206,20 @@ object ClangFFMWrapper {
             if (clangLib == null) {
                 throw ClangInitializationException(
                     "Failed to load libclang library. " +
-                    "Ensure LLVM/Clang 17+ is installed. " +
-                    "Tried System.loadLibrary with: " + libNames.joinToString(", ") + 
-                    ", and known paths including Windows LLVM lib and bin directories. " +
-                    "Check java.library.path and PATH environment variables.")
+                        "Ensure LLVM/Clang 17+ is installed. " +
+                        "Tried System.loadLibrary with: " + libNames.joinToString(", ") +
+                        ", and known paths including Windows LLVM lib and bin directories. " +
+                        "Check java.library.path and PATH environment variables."
+                )
             }
 
             // Resolve required function symbols
             clang_createIndex = resolveSymbol(loader, "clang_createIndex", CREATE_INDEX_DESC)
             clang_parseTranslationUnit = resolveSymbol(loader, "clang_parseTranslationUnit", PARSE_TU_DESC)
             clang_disposeIndex = resolveSymbol(loader, "clang_disposeIndex", DISPOSE_INDEX_DESC)
-            clang_disposeTranslationUnit = resolveSymbol(loader, "clang_disposeTranslationUnit", DISPOSE_TU_DESC)
-            
+            clang_disposeTranslationUnit =
+                resolveSymbol(loader, "clang_disposeTranslationUnit", DISPOSE_TU_DESC)
+
             // Optional: diagnostics
             try {
                 clang_getNumDiagnostics = resolveSymbol(loader, "clang_getNumDiagnostics", GET_NUM_DIAG_DESC)
@@ -226,7 +235,6 @@ object ClangFFMWrapper {
 
             initialized = true
             println("ClangFFMWrapper initialized successfully with libclang")
-            
         } catch (e: Exception) {
             throw ClangInitializationException("Failed to initialize Clang FFM bindings", e)
         }
@@ -236,7 +244,11 @@ object ClangFFMWrapper {
      * Resolve a symbol to a MethodHandle with the given descriptor.
      * Tries both with and without leading underscore prefix.
      */
-    private fun resolveSymbol(loader: SymbolLookup, symbolName: String, desc: FunctionDescriptor): MethodHandle {
+    private fun resolveSymbol(
+        loader: SymbolLookup,
+        symbolName: String,
+        desc: FunctionDescriptor
+    ): MethodHandle {
         // Try without underscore first (standard)
         var symbol: MemorySegment? = loader.find(symbolName).orElse(null)
         if (symbol != null) {
@@ -264,7 +276,8 @@ object ClangFFMWrapper {
     private fun validateNotNull(segment: MemorySegment?, operationName: String): MemorySegment {
         if (segment == null || segment == MemorySegment.NULL) {
             throw ClangMemoryException(
-                "$operationName returned NULL pointer. Check libclang version and parameters.")
+                "$operationName returned NULL pointer. Check libclang version and parameters."
+            )
         }
         return segment
     }
@@ -299,10 +312,11 @@ object ClangFFMWrapper {
      * @return MemorySegment pointing to the CXTranslationUnit (must be disposed with disposeTranslationUnit)
      */
     @JvmStatic
+    @JvmOverloads
     fun parseTranslationUnit(
         index: MemorySegment?,
         sourceFilePath: String?,
-        commandLineArgs: Array<String>?
+        commandLineArgs: Array<String>? = null
     ): MemorySegment {
         ensureInitialized()
         validateNotNull(index, "parseTranslationUnit - index parameter")
@@ -333,11 +347,17 @@ object ClangFFMWrapper {
             //   const char *const *command_line_args, int num_command_line_args,
             //   struct CXUnsavedFile *unsaved_files, unsigned num_unsaved_files,
             //   unsigned options);
-            
+
             val translationUnit = clang_parseTranslationUnit!!.invoke(
-                index, filePath, argsArray, args.size, MemorySegment.NULL, 0, 0
+                index,
+                filePath,
+                argsArray,
+                args.size,
+                MemorySegment.NULL,
+                0,
+                0
             ) as MemorySegment
-            
+
             return validateNotNull(translationUnit, "clang_parseTranslationUnit")
         }
     }
@@ -385,13 +405,13 @@ object ClangFFMWrapper {
         if (translationUnit == null || translationUnit == MemorySegment.NULL) {
             return -1
         }
-        
+
         if (clang_getNumDiagnostics == null) {
             return -1
         }
 
         return try {
-            (clang_getNumDiagnostics!!.invoke(translationUnit) as Int)
+            clang_getNumDiagnostics!!.invoke(translationUnit) as Int
         } catch (t: Throwable) {
             -1
         }
@@ -401,7 +421,8 @@ object ClangFFMWrapper {
     fun ensureInitialized() {
         if (!initialized) {
             throw ClangInitializationException(
-                "ClangFFMWrapper not initialized. Call initialize() first.")
+                "ClangFFMWrapper not initialized. Call initialize() first."
+            )
         }
     }
 

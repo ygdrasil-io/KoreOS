@@ -6,7 +6,7 @@ import java.lang.foreign.MemorySegment
 /**
  * Basic wrapper for a Clang CXDiagnostic.
  * Represents a diagnostic message from Clang.
- * 
+ *
  * Note: Full diagnostic functionality will be implemented in GRA-3.
  */
 class ClangDiagnostic(
