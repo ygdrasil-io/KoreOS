@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -25,16 +25,16 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Install LLVM Clang 17
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install LLVM Clang 17 (Ubuntu)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y llvm-17 clang-17 libclang-17-dev libclang-common-17-dev
           echo "LLVM_PATH=/usr/lib/llvm-17" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/usr/lib/llvm-17/lib:${{ env.LD_LIBRARY_PATH }}" >> $GITHUB_ENV
 
-      - name: Install LLVM Clang (macOS)
-        if: matrix.os == 'macos-latest'
+      - name: Install LLVM Clang 17 (macOS)
+        if: runner.os == 'macOS'
         run: |
           brew update
           brew install llvm@17
@@ -42,8 +42,8 @@ jobs:
           echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
           echo "DYLD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${{ env.DYLD_LIBRARY_PATH }}" >> $GITHUB_ENV
 
-      - name: Install LLVM Clang (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Install LLVM Clang 17 (Windows)
+        if: runner.os == 'Windows'
         run: |
           choco install llvm -y --version=17.0.0
           echo "LLVM_PATH=C:\Program Files\LLVM" >> $GITHUB_ENV
