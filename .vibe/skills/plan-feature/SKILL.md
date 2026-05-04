@@ -254,7 +254,10 @@ invocation-patterns:
 - [ ] Exécuter TOUS les tests (doit être 100% vert)
 - [ ] Exécuter detekt et corriger les issues
 - [ ] Vérifier couverture de test > 80%
-- [ ] Créer PR vers master
+- [ ] **✅ CI**: Vérifier que la CI GitHub passe (tous les checks verts)
+- [ ] **✅ PR**: Créer PR via `gh pr create --base master --fill --title "feat(GRA-X): {description}"`
+- [ ] **✅ PR**: Assigner le ticket Linear dans la PR (lien automatique)
+- [ ] **✅ PR**: Vérifier que la CI passe sur la PR (attendre tous les checks verts)
 - [ ] Demander code review
 
 ---
@@ -287,6 +290,9 @@ invocation-patterns:
 - [ ] **TDD**: TOUS les tests unitaires écrits AVANT le code de production
 - [ ] **TDD**: Couverture de test > 80% pour tout nouveau code
 - [ ] **TDD**: Aucun code de production mergé sans son test
+- [ ] **CI**: TOUS les checks GitHub Actions passent (build, test, detekt)
+- [ ] **PR**: PR créée via `gh pr create` avec convention de nommage
+- [ ] **PR**: PR liée au ticket Linear
 - [ ] {Critère 1}
 - [ ] {Critère 2}
 
@@ -532,6 +538,19 @@ mkdir -p .plan
 
 # Get date
 date +%Y-%m-%d
+
+# ⚠️ GitHub CLI commands (for PR creation)
+# Create PR with conventional commit title
+gh pr create --base master --fill --title "feat(GRA-X): description"
+
+# List PRs for current branch
+gh pr list --head
+
+# Check PR status (wait for CI)
+gh pr view --json statusChecks
+
+# View CI checks for current branch
+gh api repos/{owner}/{repo}/commits/{sha}/check-runs
 ```
 
 ---
