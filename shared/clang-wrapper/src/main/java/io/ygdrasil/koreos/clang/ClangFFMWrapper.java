@@ -366,17 +366,16 @@ public final class ClangFFMWrapper {
 
     /**
      * Reset the wrapper state (for testing purposes).
-     * Note: Does not reset linker and libArena as they are shared resources.
+     * Note: This method now only resets the initialized flag to allow re-initialization.
+     * Method handles and library references are NOT reset to avoid use-after-free issues
+     * during JVM shutdown. Once initialized, the native library remains loaded for the
+     * JVM lifetime.
      */
     static void reset() {
         initialized = false;
-        clangLib = null;
-        clang_createIndex = null;
-        clang_parseTranslationUnit = null;
-        clang_disposeIndex = null;
-        clang_disposeTranslationUnit = null;
-        clang_getNumDiagnostics = null;
-        clang_getDiagnostic = null;
-        // Note: linker and libArena are NOT reset as they are static final/immutable
+        // Note: We do NOT reset clangLib, linker, libArena, or method handles.
+        // These reference native resources that must remain valid for the JVM lifetime.
+        // Resetting them causes use-after-free crashes during JVM shutdown on Linux.
+        // The initialized flag is reset to allow re-initialization checks to work.
     }
 }
