@@ -111,7 +111,13 @@ The skill follows a 5-phase workflow:
    - Measure method length (target: < 60 lines)
    - Measure class length (target: < 300 lines)
 
-2. **FFM-Specific Checks** (Foreign Function & Memory API):
+2. **⚠️ CRITICAL: Execute Tests**:
+   - **MUST run** `./gradlew test` or `./gradlew :<module>:test` for all affected modules
+   - **MUST run** `./gradlew :<module>:compileTestKotlin` / `compileTestJava` to verify test compilation
+   - Document any test failures with root cause (e.g., missing native library, environment issue)
+   - **BLOCKING**: Tests that fail due to code errors (not environment) MUST be fixed before approval
+
+3. **FFM-Specific Checks** (Foreign Function & Memory API):
    - Verify Arena scopes are properly managed
    - Check MemorySegment.NULL checks before use
    - Validate downcall handles are cached appropriately
@@ -146,6 +152,7 @@ The skill follows a 5-phase workflow:
    - Error handling as specified
    - Documentation requirements
    - Test coverage requirements
+   - **⚠️ CRITICAL**: Verify tests pass or document blocking issues (environment vs. code bugs)
 
 **Tools used**: `bash`, `grep`
 
@@ -310,15 +317,20 @@ The implementation:
 - [ ] Package declarations match project structure (`io.ygdrasil.koreos`)
 - [ ] SPDX license identifier present in all source files
 
-### Testing Checklist
+### ⚠️ Testing Checklist (CRITICAL - MUST VERIFY)
+**IMPORTANT**: Tests execution is MANDATORY. Do NOT approve without running tests.
+
+- [ ] **✅ MUST RUN**: All tests execute via `./gradlew test` or module-specific test tasks
+- [ ] **✅ MUST VERIFY**: Test compilation succeeds for all new/modified test files
 - [ ] Unit tests exist for all new/modified public classes
 - [ ] Unit tests exist for all new/modified public methods
 - [ ] Edge cases tested (null, empty, boundary values, error conditions)
 - [ ] Tests are isolated (proper `@BeforeEach`/`@AfterEach` setup/teardown)
 - [ ] Test names are descriptive (follow `methodUnderTest_scenario_expectedBehavior`)
 - [ ] Assertions are specific (not just `assertNotNull`, use meaningful matches)
-- [ ] Test coverage >80% for new code
+- [ ] Test coverage >80% for new code (where applicable)
 - [ ] Integration tests added for component interactions
+- [ ] **❌ BLOCKING**: Any test failure due to code logic (not environment) blocks approval
 
 ### Resource Management Checklist
 - [ ] `AutoCloseable` implemented for resources requiring cleanup
@@ -382,11 +394,15 @@ git log -1 --pretty=format:'%an'
 # Run detekt static analysis
 ./gradlew detekt
 
-# Run tests
+# ⚠️ CRITICAL: Run tests (MUST execute for code review)
 ./gradlew test
 
-# Run specific tests
+# Run specific tests (MUST run for affected modules)
 ./gradlew :shared:clang-wrapper:test
+
+# Compile tests only (to verify test code compiles)
+./gradlew compileTestKotlin
+./gradlew compileTestJava
 
 # Check code formatting
 ./gradlew spotlessCheck

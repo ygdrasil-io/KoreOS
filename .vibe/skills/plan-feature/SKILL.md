@@ -127,6 +127,23 @@ invocation-patterns:
      - Documentation seule - Documentation uniquement
    ```
 
+3. **⚠️ CRITICAL: TDD Requirement Confirmation**
+   ```
+   Question: "Cette implémentation suivra-t-elle strictement le TDD (Test-Driven Development) ?"
+   Options:
+     - ✅ Oui, TOUS les tests seront écrits AVANT le code de production (REQUIRED)
+     - ❌ Non (BLOCKING - GRA tickets MUST use TDD)
+   
+   If user selects "Non":
+     - Display: "❌ ERREUR: Tous les tickets GRA-* DOIVENT utiliser TDD"
+     - Display: "Le workflow KoreOS exige:"
+       - 1. Écrire les tests UNITAIRES d'abord (rouge)
+       - 2. Voir les tests échouer
+       - 3. Écrire le code minimal pour faire passer les tests (vert)
+       - 4. Refactorer avec les tests qui passent
+     - Question: "Voulez-vous annuler ou recommencer avec TDD ?" [Recommencer / Annuler]
+   ```
+
 3. **Identify affected files**
    - If improvement: list files to modify (from grep/git diff)
    - If new feature: propose location based on type
@@ -179,6 +196,26 @@ invocation-patterns:
 
 ---
 
+## 🧪 TDD Requirements (OBLIGATOIRE)
+
+**⚠️ CRITICAL: Tous les tickets GRA-* DOIVENT suivre strictement le TDD**
+
+### Workflow TDD Mandatory:
+1. **🔴 RED**: Écrire le test UNITARE d'abord (le test DOIT échouer initialement)
+2. **🟢 GREEN**: Écrire le code MINIMAL pour faire passer le test
+3. **🔵 REFACTOR**: Améliorer le code AVEC les tests qui passent
+
+### TDD Checklist:
+- [ ] **TOUS** les tests unitaires écrits AVANT le code de production
+- [ ] Chaque classe a son test correspondant (ex: `ClangCursor.kt` → `ClangCursorTest.kt`)
+- [ ] Chaque méthode publique a au moins un test
+- [ ] Tests couvrent les cas normaux ET les edge cases (null, vide, limites)
+- [ ] Tests suivent la naming convention: `methodUnderTest_scenario_expectedBehavior`
+- [ ] Couverture de test > 80% pour tout nouveau code
+- [ ] Aucun code de production mergé sans son test
+
+---
+
 ## 📁 Fichiers Concernés
 
 | Fichier | Action | Type | Statut |
@@ -187,26 +224,40 @@ invocation-patterns:
 
 ---
 
-## 🏗️ Étapes d'Implémentation
+## 🏗️ Étapes d'Implémentation (TDD Workflow)
 
 ### 🟢 Phase 1: Préparation ({X} jour)
 - [ ] Créer la branche `feature/GRA-X-{description}` depuis master
 - [ ] Mettre à jour docs/clang-ffm/GRA-X-PROGRESS.md
 - [ ] Lire la documentation nécessaire
+- [ ] **TDD**: Créer la structure des fichiers de test (ex: `*Test.kt`)
 
-### 🟡 Phase 2: Développement ({X} jours)
-- [ ] {Étape 1}
-- [ ] {Étape 2}
+### 🔴 Phase 2: TDD - RED (Écrire les tests d'abord) ({X} jours)
+- [ ] **TDD**: Écrire TOUS les tests unitaires pour la première feature
+- [ ] **TDD**: Vérifier que les tests échouent (compilation ou assertion)
+- [ ] **TDD**: Ne PAS écrire de code de production dans cette phase
+- [ ] Répéter pour chaque sous-feature avant de passer à la phase GREEN
 
-### 🟢 Phase 3: Tests ({X} jour)
-- [ ] {Test 1}
-- [ ] {Test 2}
-- [ ] Vérifier couverture > 80%
+### 🟢 Phase 3: TDD - GREEN (Code minimal) ({X} jours)
+- [ ] **TDD**: Écrire le code MINIMAL pour faire passer UN test
+- [ ] **TDD**: Vérifier que le test passe
+- [ ] **TDD**: Ne PAS optimiser ou refactorer ici
+- [ ] Répéter pour chaque test un par un
 
-### 🟢 Phase 4: Finalisation ({X} jour)
-- [ ] Exécuter detekt
-- [ ] Corriger les warnings
-- [ ] Créer PR vers master
+### 🔵 Phase 4: TDD - REFACTOR (Amélioration) ({X} jours)
+- [ ] **TDD**: Refactorer le code AVEC tous les tests qui passent
+- [ ] **TDD**: Améliorer la conception sans casser les tests
+- [ ] **TDD**: Extraire les duplications
+- [ ] **TDD**: Améliorer les noms des méthodes/variables
+
+### 🟢 Phase 5: Validation finale ({X} jour)
+- [ ] Exécuter TOUS les tests (doit être 100% vert)
+- [ ] Exécuter detekt et corriger les issues
+- [ ] Vérifier couverture de test > 80%
+- [ ] **✅ CI**: Vérifier que la CI GitHub passe (tous les checks verts)
+- [ ] **✅ PR**: Créer PR via `gh pr create --base master --fill --title "feat(GRA-X): {description}"`
+- [ ] **✅ PR**: Assigner le ticket Linear dans la PR (lien automatique)
+- [ ] **✅ PR**: Vérifier que la CI passe sur la PR (attendre tous les checks verts)
 - [ ] Demander code review
 
 ---
@@ -236,6 +287,12 @@ invocation-patterns:
 
 ## ✅ Acceptance Criteria
 
+- [ ] **TDD**: TOUS les tests unitaires écrits AVANT le code de production
+- [ ] **TDD**: Couverture de test > 80% pour tout nouveau code
+- [ ] **TDD**: Aucun code de production mergé sans son test
+- [ ] **CI**: TOUS les checks GitHub Actions passent (build, test, detekt)
+- [ ] **PR**: PR créée via `gh pr create` avec convention de nommage
+- [ ] **PR**: PR liée au ticket Linear
 - [ ] {Critère 1}
 - [ ] {Critère 2}
 
@@ -354,6 +411,12 @@ git checkout -b "$branch_name"
    - Loop back to appropriate phase
 
 4. **If validated**:
+   - **⚠️ CRITICAL: Verify TDD is included in plan**
+   - Check that plan contains:
+     - TDD Requirements section
+     - TDD workflow phases (RED, GREEN, REFACTOR)
+     - TDD checklist items
+   - If missing: Display error and loop back to Phase 3
    - Proceed to Phase 6
 
 **Tools**: `ask_user_question`
@@ -422,6 +485,11 @@ git checkout -b "$branch_name"
 8. "Quelles sont les dépendances avec d'autres tickets ?"
    - Type: free text (ex: "GRA-2 doit être terminé")
 
+9. **⚠️ CRITICAL: Confirm TDD understanding**
+   - Question: "Confirmez-vous que vous comprenez et appliquerez le workflow TDD (RED → GREEN → REFACTOR) pour TOUTE cette implémentation ?"
+   - Options: [Oui, je confirme / Non, j'ai besoin d'explications]
+   - If "Non": Display TDD workflow and loop back to question
+
 ### Phase 4: Branch
 9. **If not on master**: "Voulez-vous checkout master maintenant ? (Y/n)"
 
@@ -470,6 +538,19 @@ mkdir -p .plan
 
 # Get date
 date +%Y-%m-%d
+
+# ⚠️ GitHub CLI commands (for PR creation)
+# Create PR with conventional commit title
+gh pr create --base master --fill --title "feat(GRA-X): description"
+
+# List PRs for current branch
+gh pr list --head
+
+# Check PR status (wait for CI)
+gh pr view --json statusChecks
+
+# View CI checks for current branch
+gh api repos/{owner}/{repo}/commits/{sha}/check-runs
 ```
 
 ---
@@ -560,6 +641,7 @@ Skill:
 5. **Branch Pattern**: `feature/GRA-{X}-{kebab-case-description}`
 6. **Plan Storage**: `.plan/GRA-{X}-implementation-plan.md`
 7. **Documentation**: Progress tracked in `docs/clang-ffm/GRA-{X}-PROGRESS.md`
+8. **⚠️ CRITICAL: TDD MANDATORY** - ALL GRA-* tickets MUST follow strict TDD (RED → GREEN → REFACTOR)
 
 ---
 

@@ -1,16 +1,22 @@
 // SPDX-License-Identifier: MIT
-package io.ygdrasil.koreos.clang;
+package io.ygdrasil.koreos.clang
 
-import java.lang.foreign.MemorySegment;
+import java.lang.foreign.MemorySegment
 
 /**
  * High-level wrapper for a Clang CXIndex.
  * Represents a Clang index object used for parsing source code.
  */
-public final class ClangIndex implements AutoCloseable {
+class ClangIndex private constructor(
+    /** The underlying MemorySegment handle. */
+    val handle: MemorySegment,
+    /** Whether this index has been disposed. */
+    var disposed: Boolean = false
+) : AutoCloseable {
 
-    private final MemorySegment handle;
-    private boolean disposed = false;
+    init {
+        ClangFFMWrapper.ensureInitialized()
+    }
 
     /**
      * Creates a new Clang index.
@@ -19,17 +25,16 @@ public final class ClangIndex implements AutoCloseable {
      * @throws ClangInitializationException if ClangFFMWrapper is not initialized
      * @throws ClangMemoryException if index creation fails
      */
-    public ClangIndex(boolean excludeDeclsFromPCH, boolean displayDiagnostics) {
-        ClangFFMWrapper.ensureInitialized();
-        this.handle = ClangFFMWrapper.createIndex(excludeDeclsFromPCH, displayDiagnostics);
+    constructor(excludeDeclsFromPCH: Boolean, displayDiagnostics: Boolean) : this(
+        ClangFFMWrapper.createIndex(excludeDeclsFromPCH, displayDiagnostics)
+    ) {
+        ClangFFMWrapper.ensureInitialized()
     }
 
     /**
      * Creates a new Clang index with default settings.
      */
-    public ClangIndex() {
-        this(false, false);
-    }
+    constructor() : this(false, false)
 
     /**
      * Parses a translation unit (source file).
@@ -39,9 +44,9 @@ public final class ClangIndex implements AutoCloseable {
      * @throws ClangParsingException if parsing fails
      * @throws ClangMemoryException if result is NULL
      */
-    public ClangTranslationUnit parseTranslationUnit(String sourceFilePath, String[] commandLineArgs) {
-        MemorySegment tu = ClangFFMWrapper.parseTranslationUnit(handle, sourceFilePath, commandLineArgs);
-        return new ClangTranslationUnit(tu);
+    fun parseTranslationUnit(sourceFilePath: String, commandLineArgs: Array<String>): ClangTranslationUnit {
+        val tu = ClangFFMWrapper.parseTranslationUnit(handle, sourceFilePath, commandLineArgs)
+        return ClangTranslationUnit(tu)
     }
 
     /**
@@ -49,45 +54,33 @@ public final class ClangIndex implements AutoCloseable {
      * @param sourceFilePath Path to the source file
      * @return A new ClangTranslationUnit
      */
-    public ClangTranslationUnit parseTranslationUnit(String sourceFilePath) {
-        return parseTranslationUnit(sourceFilePath, new String[0]);
+    fun parseTranslationUnit(sourceFilePath: String): ClangTranslationUnit {
+        return parseTranslationUnit(sourceFilePath, emptyArray())
     }
 
     /**
      * Checks if this index has been disposed.
      * @return true if disposed
      */
-    public boolean isDisposed() {
-        return disposed;
-    }
-
-    /**
-     * Gets the underlying MemorySegment handle.
-     * For advanced use only.
-     * @return The MemorySegment handle
-     */
-    public MemorySegment getHandle() {
-        return handle;
+    fun isDisposed(): Boolean {
+        return disposed
     }
 
     /**
      * Disposes this index and releases associated resources.
      */
-    @Override
-    public void close() {
+    override fun close() {
         if (disposed) {
-            return;
+            return
         }
-        ClangFFMWrapper.disposeIndex(handle);
-        disposed = true;
+        ClangFFMWrapper.disposeIndex(handle)
+        disposed = true
     }
 
     /**
      * Disposes this index.
      */
-    public void dispose() {
-        close();
+    fun dispose() {
+        close()
     }
-
-
 }

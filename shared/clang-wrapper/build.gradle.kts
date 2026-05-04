@@ -1,5 +1,6 @@
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.3.20"
+    alias(libs.plugins.ktlint)
 }
 
 group = "io.ygdrasil.koreos"
@@ -22,11 +23,11 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-    
+
     // Enable native access for FFM (required for Java 25+)
     val os = System.getProperty("os.name").lowercase()
     val nativeArgs = mutableListOf("--enable-native-access=ALL-UNNAMED")
-    
+
     // Set library path - must be passed via environment for native linker to work
     if (os.contains("mac") || os.contains("darwin")) {
         val dyldPath = System.getenv("DYLD_LIBRARY_PATH") ?: "/opt/homebrew/opt/llvm/lib"
@@ -43,6 +44,6 @@ tasks.withType<Test> {
             ?: (System.getenv("LLVM_PATH")?.let { "$it\\lib;$it\\bin" } ?: "C:\\Program Files\\LLVM\\lib;C:\\Program Files\\LLVM\\bin")
         nativeArgs.add("-Djava.library.path=$javaLibPath")
     }
-    
+
     jvmArgs = nativeArgs
 }
