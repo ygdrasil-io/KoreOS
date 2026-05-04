@@ -6,8 +6,6 @@ import java.lang.foreign.MemorySegment
 /**
  * Basic wrapper for a Clang CXCursor.
  * Represents a cursor in the Clang AST.
- *
- * Note: Full cursor functionality will be implemented in GRA-3.
  */
 class ClangCursor(
     /** The underlying MemorySegment handle. */

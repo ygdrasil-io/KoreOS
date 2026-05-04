@@ -14,6 +14,10 @@ class ClangIndex private constructor(
     var disposed: Boolean = false
 ) : AutoCloseable {
 
+    init {
+        ClangFFMWrapper.ensureInitialized()
+    }
+
     /**
      * Creates a new Clang index.
      * @param excludeDeclsFromPCH Whether to exclude declarations from precompiled headers

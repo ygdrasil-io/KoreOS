@@ -14,7 +14,7 @@ import java.nio.file.Path
 
 /**
  * Low-level wrapper for libclang using Java 21+ FFM API.
- * Part of GRA-2: Basic implementation of libclang wrapper with FFM.
+ * Part of GRA-3: Conversion of libclang wrapper from Java to Kotlin.
  */
 object ClangFFMWrapper {
 
