@@ -112,7 +112,7 @@ public final class ClangFFMWrapper {
                 }
             }
 
-            // If not found, try loading from known paths
+            // If not found, try loading from known paths using libraryLookup
             if (clangLib == null) {
                 String[] knownPaths = {
                     // Homebrew (macOS)
@@ -138,7 +138,23 @@ public final class ClangFFMWrapper {
                     try {
                         if (Files.exists(Path.of(path))) {
                             System.out.println("Trying known path: " + path);
-                            // Load the library and get its symbol lookup
+                            // Try loading the library with System.load first
+                            // This ensures the library is loaded into the JVM's native library cache
+                            try {
+                                System.load(path);
+                                System.out.println("Successfully loaded library with System.load: " + path);
+                                // Now try to find symbols with default lookup
+                                clangLib = loader.find("clang_createIndex").orElse(null);
+                                if (clangLib != null) {
+                                    System.out.println("Found clang_createIndex after System.load");
+                                    break;
+                                }
+                            } catch ( UnsatisfiedLinkError | SecurityException e) {
+                                // Fall back to SymbolLookup.libraryLookup
+                                System.out.println("System.load failed, trying libraryLookup: " + e.getMessage());
+                            }
+                            
+                            // Fallback: use libraryLookup
                             SymbolLookup libLookup = SymbolLookup.libraryLookup(Path.of(path), libArena);
                             // Check that all required symbols exist in this library
                             if (libLookup.find("clang_createIndex").isPresent() &&
