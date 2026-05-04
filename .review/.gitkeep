@@ -1,0 +1,2 @@
+# This file ensures the .review directory is tracked by git
+# even when empty. Reports are generated here by the code-review skill.

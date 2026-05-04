@@ -9,10 +9,14 @@ on:
 jobs:
   build:
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+
+    env:
+      LIBCLANG_DISABLE_CRASH_RECOVERY: 1
 
     steps:
       - name: Checkout repository
@@ -25,21 +29,116 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Install LLVM Clang 17 (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm-17 clang-17 libclang-17-dev libclang-common-17-dev
+          echo "LLVM_PATH=/usr/lib/llvm-17" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/lib/llvm-17/lib:${{ env.LD_LIBRARY_PATH }}" >> $GITHUB_ENV
+          # Disable libclang crash recovery to prevent JVM signal handler conflicts
+          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1" >> $GITHUB_ENV
+          # Export so child processes can see it
+          export LD_LIBRARY_PATH=/usr/lib/llvm-17/lib:${{ env.LD_LIBRARY_PATH }}
+
+      - name: Install LLVM Clang 17 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install llvm@17
+          echo "LLVM_PATH=$(brew --prefix llvm@17)" >> $GITHUB_ENV
+          echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
+          echo "DYLD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${{ env.DYLD_LIBRARY_PATH }}" >> $GITHUB_ENV
+          # Disable libclang crash recovery to prevent JVM signal handler conflicts
+          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1" >> $GITHUB_ENV
+          # Export so child processes can see it
+          export DYLD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${{ env.DYLD_LIBRARY_PATH }}
+
+      - name: Install LLVM Clang (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install llvm -y --allow-downgrade --force
+          # Find the actual LLVM installation path
+          $llvmPath = "C:\Program Files\LLVM"
+          if (Test-Path "$llvmPath\bin\clang.exe") {
+            echo "Found LLVM at: $llvmPath"
+            echo "LLVM_PATH=$llvmPath" >> $env:GITHUB_ENV
+            echo "$llvmPath\bin" >> $env:GITHUB_PATH
+          } else {
+            # Try alternative path
+            $llvmPath = "C:\Program Files (x86)\LLVM"
+            if (Test-Path "$llvmPath\bin\clang.exe") {
+              echo "Found LLVM at: $llvmPath"
+              echo "LLVM_PATH=$llvmPath" >> $env:GITHUB_ENV
+              echo "$llvmPath\bin" >> $env:GITHUB_PATH
+            } else {
+              echo "ERROR: LLVM not found in expected locations!"
+              Get-ChildItem -Path "C:\" -Recurse -Filter "clang.exe" -ErrorAction SilentlyContinue | Select-Object -First 10 | ForEach-Object { echo "Found clang.exe at: $($_.FullName)" }
+            }
+          }
+          # Check if libclang.dll exists
+          if (Test-Path "$llvmPath\lib\libclang.dll") {
+            echo "Found libclang.dll at: $llvmPath\lib\libclang.dll"
+          } elseif (Test-Path "$llvmPath\bin\libclang.dll") {
+            echo "Found libclang.dll at: $llvmPath\bin\libclang.dll"
+          } else {
+            echo "WARNING: libclang.dll not found in $llvmPath\lib or $llvmPath\bin"
+            Get-ChildItem -Path "$llvmPath" -Recurse -Filter "libclang*.dll" -ErrorAction SilentlyContinue | ForEach-Object { echo "Found: $($_.FullName)" }
+          }
+          # Set java.library.path to include both lib and bin directories
+          echo "JAVA_LIBRARY_PATH=$llvmPath\lib;$llvmPath\bin;${{ env.JAVA_LIBRARY_PATH }}" >> $env:GITHUB_ENV
+          # Disable libclang crash recovery to prevent JVM signal handler conflicts
+          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1" >> $env:GITHUB_ENV
+          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1"
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
 
       - name: Build with Gradle
+        env:
+          LIBCLANG_DISABLE_CRASH_RECOVERY: 1
+          JAVA_LIBRARY_PATH: ${{ env.JAVA_LIBRARY_PATH }}
         run: ./gradlew build --no-daemon
 
       - name: Run tests
+        env:
+          LIBCLANG_DISABLE_CRASH_RECOVERY: 1
+          JAVA_LIBRARY_PATH: ${{ env.JAVA_LIBRARY_PATH }}
         run: ./gradlew test --no-daemon
 
-      - name: Upload test results
+      - name: Collect crash diagnostics (Unix)
+        if: always() && runner.os != 'Windows'
+        continue-on-error: true
+        run: |
+          mkdir -p crash-diagnostics
+          find . -name "hs_err_pid*.log" -exec cp {} crash-diagnostics/ \; 2>/dev/null || true
+          find . -name "core.*" -exec cp {} crash-diagnostics/ \; 2>/dev/null || true
+          find . -name "*.hprof" -exec cp {} crash-diagnostics/ \; 2>/dev/null || true
+          ls crash-diagnostics/ 2>/dev/null || echo "No crash files found"
+
+      - name: Collect crash diagnostics (Windows)
+        if: always() && runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path crash-diagnostics | Out-Null
+          Get-ChildItem -Path . -Recurse -Filter hs_err_pid*.log -ErrorAction SilentlyContinue | Copy-Item -Destination crash-diagnostics -Force
+          Get-ChildItem -Path . -Recurse -Filter core.* -ErrorAction SilentlyContinue | Copy-Item -Destination crash-diagnostics -Force
+          Get-ChildItem -Path . -Recurse -Filter *.hprof -ErrorAction SilentlyContinue | Copy-Item -Destination crash-diagnostics -Force
+          if ((Get-ChildItem -Path crash-diagnostics -ErrorAction SilentlyContinue).Count -eq 0) {
+            Write-Output "No crash files found"
+          } else {
+            Get-ChildItem -Path crash-diagnostics
+          }
+
+      - name: Upload test results and crash diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.os }}
-          path: '**/build/test-results/**'
+          path: |
+            crash-diagnostics/
+            shared/clang-wrapper/hs_err_*.log
 
   documentation:
     name: Generate Documentation
