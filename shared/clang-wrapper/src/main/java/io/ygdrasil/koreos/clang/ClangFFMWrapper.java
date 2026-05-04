@@ -15,7 +15,7 @@ public final class ClangFFMWrapper {
 
     private static volatile boolean initialized = false;
     private static MemorySegment clangLib;
-    private static Linker linker;
+    private static Linker linker = Linker.nativeLinker();
     // Use a global arena that lives for the entire JVM lifetime
     // This prevents use-after-free issues during JVM shutdown
     private static final Arena libArena = Arena.global();
@@ -86,7 +86,6 @@ public final class ClangFFMWrapper {
         }
 
         try {
-            linker = Linker.nativeLinker();
             SymbolLookup loader = linker.defaultLookup();
 
             // Try multiple library names for cross-platform support
@@ -367,16 +366,17 @@ public final class ClangFFMWrapper {
 
     /**
      * Reset the wrapper state (for testing purposes).
+     * Note: Does not reset linker and libArena as they are shared resources.
      */
     static void reset() {
         initialized = false;
         clangLib = null;
-        linker = null;
         clang_createIndex = null;
         clang_parseTranslationUnit = null;
         clang_disposeIndex = null;
         clang_disposeTranslationUnit = null;
         clang_getNumDiagnostics = null;
         clang_getDiagnostic = null;
+        // Note: linker and libArena are NOT reset as they are static final/immutable
     }
 }
