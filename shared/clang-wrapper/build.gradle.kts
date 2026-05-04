@@ -36,6 +36,10 @@ tasks.withType<Test> {
         val ldPath = System.getenv("LD_LIBRARY_PATH") ?: "/usr/lib/llvm-17/lib"
         environment("LD_LIBRARY_PATH", ldPath)
         nativeArgs.add("-Djava.library.path=$ldPath")
+    } else if (os.contains("win")) {
+        // On Windows, use PATH and java.library.path
+        val llvmPath = System.getenv("LLVM_PATH") ?: "C:\\Program Files\\LLVM"
+        nativeArgs.add("-Djava.library.path=$llvmPath\\lib")
     }
     
     jvmArgs = nativeArgs

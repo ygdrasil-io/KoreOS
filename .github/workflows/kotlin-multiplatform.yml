@@ -55,10 +55,21 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install llvm -y --allow-downgrade --force
-          echo "LLVM_PATH=C:\Program Files\LLVM" >> $GITHUB_ENV
-          echo "C:\Program Files\LLVM\lib" >> $GITHUB_PATH
+          # Find the actual LLVM installation path
+          $llvmPath = "C:\Program Files\LLVM"
+          if (Test-Path "$llvmPath\bin\clang.exe") {
+            echo "LLVM_PATH=$llvmPath" >> $env:GITHUB_ENV
+            echo "$llvmPath\bin" >> $env:GITHUB_PATH
+          } else {
+            # Try alternative path
+            $llvmPath = "C:\Program Files (x86)\LLVM"
+            if (Test-Path "$llvmPath\bin\clang.exe") {
+              echo "LLVM_PATH=$llvmPath" >> $env:GITHUB_ENV
+              echo "$llvmPath\bin" >> $env:GITHUB_PATH
+            }
+          }
           # Disable libclang crash recovery to prevent JVM signal handler conflicts
-          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1" >> $GITHUB_ENV
+          echo "LIBCLANG_DISABLE_CRASH_RECOVERY=1" >> $env:GITHUB_ENV
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
