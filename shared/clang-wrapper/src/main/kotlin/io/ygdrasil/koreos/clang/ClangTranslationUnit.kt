@@ -9,9 +9,9 @@ import java.lang.foreign.MemorySegment
  */
 class ClangTranslationUnit internal constructor(
     /** The underlying MemorySegment handle. */
-    val handle: MemorySegment
+    handle: MemorySegment?
 ) : AutoCloseable {
-
+    val handle: MemorySegment
     private var disposed = false
 
     /**
@@ -20,9 +20,10 @@ class ClangTranslationUnit internal constructor(
      * @throws IllegalArgumentException if handle is null or NULL
      */
     init {
-        if (handle == MemorySegment.NULL) {
+        if (handle == null || handle == MemorySegment.NULL) {
             throw IllegalArgumentException("Translation unit handle cannot be null or NULL")
         }
+        this.handle = handle
     }
 
     /**

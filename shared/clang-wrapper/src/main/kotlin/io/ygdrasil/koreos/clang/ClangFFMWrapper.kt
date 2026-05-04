@@ -301,23 +301,24 @@ object ClangFFMWrapper {
      */
     @JvmStatic
     fun parseTranslationUnit(
-        index: MemorySegment,
-        sourceFilePath: String,
-        commandLineArgs: Array<String>
+        index: MemorySegment?,
+        sourceFilePath: String?,
+        commandLineArgs: Array<String>?
     ): MemorySegment {
         ensureInitialized()
         validateNotNull(index, "parseTranslationUnit - index parameter")
 
-        if (sourceFilePath.isEmpty()) {
+        if (sourceFilePath.isNullOrEmpty()) {
             throw ClangParsingException("Source file path cannot be null or empty")
         }
 
+        val args = commandLineArgs ?: emptyArray()
         Arena.ofConfined().use { arena ->
             // Allocate array of pointers for command line args
-            val argsArray = arena.allocate(ValueLayout.ADDRESS, commandLineArgs.size.toLong())
-            for (i in commandLineArgs.indices) {
+            val argsArray = arena.allocate(ValueLayout.ADDRESS, args.size.toLong())
+            for (i in args.indices) {
                 // Allocate memory for the string (+1 for null terminator)
-                val argValue = commandLineArgs[i]
+                val argValue = args[i]
                 val arg = arena.allocate(argValue.length + 1L)
                 arg.setString(0, argValue, StandardCharsets.UTF_8)
                 argsArray.setAtIndex(ValueLayout.ADDRESS, i.toLong(), arg)
@@ -335,7 +336,7 @@ object ClangFFMWrapper {
             //   unsigned options);
             
             val translationUnit = clang_parseTranslationUnit!!.invoke(
-                index, filePath, argsArray, commandLineArgs.size, MemorySegment.NULL, 0, 0
+                index, filePath, argsArray, args.size, MemorySegment.NULL, 0, 0
             ) as MemorySegment
             
             return validateNotNull(translationUnit, "clang_parseTranslationUnit")

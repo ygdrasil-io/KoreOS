@@ -11,17 +11,20 @@ import java.lang.foreign.MemorySegment
  */
 class ClangCursor(
     /** The underlying MemorySegment handle. */
-    val handle: MemorySegment
+    handle: MemorySegment?
 ) {
+    val handle: MemorySegment
+
     /**
      * Creates a new ClangCursor from a MemorySegment handle.
      * @param handle The MemorySegment handle to the CXCursor
      * @throws IllegalArgumentException if handle is null or NULL
      */
     init {
-        if (handle == MemorySegment.NULL) {
+        if (handle == null || handle == MemorySegment.NULL) {
             throw IllegalArgumentException("Cursor handle cannot be null or NULL")
         }
+        this.handle = handle
     }
 
     // Placeholder for future cursor functionality (GRA-3)
