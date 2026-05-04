@@ -16,7 +16,9 @@ public final class ClangFFMWrapper {
     private static volatile boolean initialized = false;
     private static MemorySegment clangLib;
     private static Linker linker;
-    private static Arena libArena; // Keep arena alive for library lookup
+    // Use a global arena that lives for the entire JVM lifetime
+    // This prevents use-after-free issues during JVM shutdown
+    private static final Arena libArena = Arena.global();
 
     // Method handles for libclang functions
     private static MethodHandle clang_createIndex;
@@ -85,8 +87,6 @@ public final class ClangFFMWrapper {
 
         try {
             linker = Linker.nativeLinker();
-            // Use a global arena that lives for the entire JVM lifetime
-            libArena = Arena.global();
             SymbolLookup loader = linker.defaultLookup();
 
             // Try multiple library names for cross-platform support
