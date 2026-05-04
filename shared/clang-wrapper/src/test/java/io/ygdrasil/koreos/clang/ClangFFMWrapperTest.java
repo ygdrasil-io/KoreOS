@@ -68,11 +68,13 @@ public class ClangFFMWrapperTest {
     public void testCreateIndex() {
         ClangFFMWrapper.initialize();
 
-        assertDoesNotThrow(() -> {
-            MemorySegment index = ClangFFMWrapper.createIndex(false, false);
+        MemorySegment index = ClangFFMWrapper.createIndex(false, false);
+        try {
             assertNotNull(index);
             assertFalse(index.equals(MemorySegment.NULL));
-        });
+        } finally {
+            ClangFFMWrapper.disposeIndex(index);
+        }
     }
 
     @Test

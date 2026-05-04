@@ -73,10 +73,21 @@ public final class ClangFFMWrapper {
     /**
      * Initialize the FFM bindings for libclang.
      * Thread-safe and idempotent.
+     * Note: The library is loaded once and remains loaded for the JVM lifetime.
+     * Subsequent calls to initialize() after reset() will restore the initialized
+     * flag without reloading the library, preventing use-after-free crashes on Linux.
      * @throws ClangInitializationException if initialization fails
      */
     public static synchronized void initialize() {
         if (initialized) {
+            return;
+        }
+
+        // If method handles are already set (library was loaded but reset was called),
+        // just restore the initialized flag without reloading the library.
+        // This prevents use-after-free crashes during JVM shutdown on Linux.
+        if (clang_createIndex != null) {
+            initialized = true;
             return;
         }
 

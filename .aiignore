@@ -1,0 +1,41 @@
+# Kotlin
+*.iml
+.idea/
+build/
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android
+local.properties
+*.apk
+*.aab
+
+# macOS
+.DS_Store
+
+# IntelliJ
+*.ipr
+*.iws
+*.iml
+
+# VS Code
+.vscode/
+
+# Other
+*.log
+*.tmp
+*.swp
+
+# Kotlin Gradle plugin data
+.kotlin/
+
+# XCode
+*.xcworkspace/
+*.xcodeproj/
+
+# CocoaPods
+Pods/
+Podfile.lock
+/.zed/
