@@ -103,7 +103,7 @@ object ClangFFMWrapper {
             println("[ClangFFMWrapper] java.library.path: " + System.getProperty("java.library.path"))
             println("[ClangFFMWrapper] Current working directory: " + System.getProperty("user.dir"))
             
-            val loader = linker.defaultLookup()
+            var loader = linker.defaultLookup()
 
             // First, try System.loadLibrary() with standard library names.
             // This uses the system library loader which respects PATH/LD_LIBRARY_PATH/DYLD_LIBRARY_PATH
@@ -185,8 +185,7 @@ object ClangFFMWrapper {
                                 libLookup.find("clang_disposeIndex").isPresent &&
                                 libLookup.find("clang_disposeTranslationUnit").isPresent) {
                                 clangLib = libLookup.find("clang_createIndex").orElse(null)
-                                // Note: We can't reassign loader as it's a val, but we can use libLookup for symbol resolution
-                                // For now, keep using default loader - symbols should be found
+                                loader = libLookup
                                 println("Loaded libclang from: $path")
                                 break
                             }
