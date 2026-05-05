@@ -236,7 +236,8 @@ object ObjectiveCRuntime {
      */
     fun getUtf8String(segment: MemorySegment): String {
         val bytes = ByteArray(segment.byteSize().toInt() - 1) // Exclude null terminator
-        segment.copyTo(MemorySegment.ofArray(bytes))
+        val byteBuffer = segment.asByteBuffer()
+        byteBuffer.get(bytes)
         return bytes.decodeToString()
     }
     
