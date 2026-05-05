@@ -99,7 +99,7 @@ class NSString(
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
         // In Objective-C, length returns an NSUInteger (unsigned long)
         // We need to extract the integer value from the MemorySegment
-        return result.get(ValueLayout.ofLong(), 0).toInt()
+        return result.get(ValueLayout.JAVA_LONG, 0).toInt()
     }
     
     /**
@@ -114,7 +114,7 @@ class NSString(
         val selector = ObjectiveCRuntime.registerSelector("characterAtIndex:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         // characterAtIndex: returns a unichar (unsigned short)
-        return result.get(ValueLayout.ofChar(), 0).toInt().toChar()
+        return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
     }
     
     /**
@@ -133,7 +133,7 @@ class NSString(
         val selector = ObjectiveCRuntime.registerSelector("isEqualToString:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         // isEqualToString: returns a BOOL (signed char)
-        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
+        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
     /**
@@ -142,7 +142,7 @@ class NSString(
     fun contains(substring: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("containsString:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, substring.handle)
-        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
+        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
     /**
@@ -151,7 +151,7 @@ class NSString(
     fun hasPrefix(prefix: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("hasPrefix:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, prefix.handle)
-        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
+        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
     /**
@@ -160,7 +160,7 @@ class NSString(
     fun hasSuffix(suffix: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("hasSuffix:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, suffix.handle)
-        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
+        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
     /**

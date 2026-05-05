@@ -210,7 +210,7 @@ open class ObjCObject(
         val isEqualSelector = ObjectiveCRuntime.registerSelector("isEqual:")
         val result = ObjectiveCRuntime.sendMessage(handle, isEqualSelector, other.handle)
         // In Objective-C, isEqual: returns a BOOL which is a signed char
-        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
+        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
     /**

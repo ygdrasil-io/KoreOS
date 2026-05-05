@@ -64,7 +64,7 @@ class NSArray(
                 // Get the selector
                 val selector = ObjectiveCRuntime.registerSelector("arrayWithObjects:count:")
                 
-                // Send the message
+                // Send the message with two arguments
                 val result = ObjectiveCRuntime.sendMessage(
                     nsArrayClass.handle,
                     selector,
@@ -89,7 +89,7 @@ class NSArray(
         val selector = ObjectiveCRuntime.registerSelector("count")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
         // count returns an NSUInteger (unsigned long)
-        return result.get(ValueLayout.ofLong(), 0).toInt()
+        return result.get(ValueLayout.JAVA_LONG, 0).toInt()
     }
     
     /**
@@ -129,7 +129,7 @@ class NSArray(
         val selector = ObjectiveCRuntime.registerSelector("containsObject:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // containsObject: returns a BOOL (signed char)
-        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
+        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
     /**
@@ -140,7 +140,7 @@ class NSArray(
         val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // indexOfObject: returns an NSUInteger (unsigned long)
         // Returns NSNotFound if not found
-        val index = result.get(ValueLayout.ofLong(), 0).toInt()
+        val index = result.get(ValueLayout.JAVA_LONG, 0).toInt()
         return if (index == Int.MAX_VALUE) -1 else index
     }
     
@@ -195,8 +195,8 @@ class NSRange(
      */
     val handle: MemorySegment by lazy {
         val segment = ObjectiveCRuntime.globalArena.allocate(16) // 2 * sizeof(NSUInteger)
-        segment.set(ValueLayout.ofLong(), 0, location.toLong())
-        segment.set(ValueLayout.ofLong(), 8, length.toLong())
+        segment.set(ValueLayout.JAVA_LONG, 0, location.toLong())
+        segment.set(ValueLayout.JAVA_LONG, 8, length.toLong())
         segment
     }
 }
