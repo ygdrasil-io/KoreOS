@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -71,7 +72,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val nsStringClass: MemorySegment = ObjectiveCRuntime.getClass("NSString")
-        assertNotEquals(null, nsStringClass)
+        assertNotNull(nsStringClass)
         assertNotEquals(MemorySegment.NULL, nsStringClass)
     }
     
@@ -80,7 +81,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val nsArrayClass: MemorySegment = ObjectiveCRuntime.getClass("NSArray")
-        assertNotEquals(null, nsArrayClass)
+        assertNotNull(nsArrayClass)
         assertNotEquals(MemorySegment.NULL, nsArrayClass)
     }
     
@@ -89,7 +90,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val nsNumberClass: MemorySegment = ObjectiveCRuntime.getClass("NSNumber")
-        assertNotEquals(null, nsNumberClass)
+        assertNotNull(nsNumberClass)
         assertNotEquals(MemorySegment.NULL, nsNumberClass)
     }
     
@@ -107,7 +108,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val selector: MemorySegment = ObjectiveCRuntime.registerSelector("alloc")
-        assertNotEquals(null, selector)
+        assertNotNull(selector)
         assertNotEquals(MemorySegment.NULL, selector)
     }
     
@@ -117,7 +118,7 @@ class ObjectiveCRuntimeTest {
         
         val testString = "Hello, Objective-C!"
         val segment: MemorySegment = ObjectiveCRuntime.allocateUtf8String(testString)
-        assertNotEquals(null, segment)
+        assertNotNull(segment)
         assertNotEquals(MemorySegment.NULL, segment)
         
         // Verify the string content
@@ -130,7 +131,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val metaClass: MemorySegment = ObjectiveCRuntime.getMetaClass("NSObject")
-        assertNotEquals(null, metaClass)
+        assertNotNull(metaClass)
         assertNotEquals(MemorySegment.NULL, metaClass)
     }
     

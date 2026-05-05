@@ -129,7 +129,7 @@ open class ObjCObject(
      */
     open fun setProperty(propertyName: String, value: ObjCObject) {
         // Setter name format: setPropertyName:
-        val setterName = "set${propertyName.capitalize()}:"
+        val setterName = "set${propertyName.replaceFirstChar { it.uppercase() }}:"
         invokeMethod(setterName, value.handle)
     }
     

@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets
  */
 class NSNumber(
     /** The native handle to the NSNumber object */
-    val handle: MemorySegment
-) {
+    handle: MemorySegment
+) : ObjCObject(handle) {
     companion object {
         private val nsNumberClass: ObjCClass by lazy {
             ObjCClass.fromName("NSNumber")
@@ -77,7 +77,7 @@ class NSNumber(
         @JvmStatic
         fun fromChar(value: Char): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithChar:")
-            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value.toInt())
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value.code)
             return NSNumber(result)
         }
     }
@@ -137,7 +137,7 @@ class NSNumber(
     fun toChar(): Char {
         val selector = ObjectiveCRuntime.registerSelector("charValue")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
-        return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
+        return result.get(ValueLayout.JAVA_CHAR, 0)
     }
     
     /**

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -30,7 +31,7 @@ class ObjCClassTest {
     @Test
     fun `test fromName for NSString`() {
         val nsStringClass: ObjCClass = ObjCClass.Companion.fromName("NSString")
-        assertNotEquals(null, nsStringClass)
+        assertNotNull(nsStringClass)
         assertEquals("NSString", nsStringClass.name)
         assertTrue(nsStringClass.isValid())
     }
@@ -38,7 +39,7 @@ class ObjCClassTest {
     @Test
     fun `test fromName for NSArray`() {
         val nsArrayClass: ObjCClass = ObjCClass.Companion.fromName("NSArray")
-        assertNotEquals(null, nsArrayClass)
+        assertNotNull(nsArrayClass)
         assertEquals("NSArray", nsArrayClass.name)
         assertTrue(nsArrayClass.isValid())
     }
@@ -62,7 +63,7 @@ class ObjCClassTest {
     fun `test getMetaClass`() {
         val nsObjectClass: ObjCClass = ObjCClass.Companion.fromName("NSObject")
         val metaClass = nsObjectClass.getMetaClass()
-        assertNotEquals(null, metaClass)
+        assertNotNull(metaClass)
         assertTrue(metaClass.name.contains("Meta"))
     }
     
@@ -83,7 +84,7 @@ class ObjCClassTest {
     fun `test createInstance`() {
         val nsStringClass: ObjCClass = ObjCClass.Companion.fromName("NSString")
         val instance = nsStringClass.createInstance()
-        assertNotEquals(null, instance)
+        assertNotNull(instance)
         assertTrue(instance.isValid())
     }
     
@@ -91,7 +92,7 @@ class ObjCClassTest {
     fun `test newInstance`() {
         val nsStringClass: ObjCClass = ObjCClass.Companion.fromName("NSString")
         val instance = nsStringClass.newInstance()
-        assertNotEquals(null, instance)
+        assertNotNull(instance)
         assertTrue(instance.isValid())
     }
     

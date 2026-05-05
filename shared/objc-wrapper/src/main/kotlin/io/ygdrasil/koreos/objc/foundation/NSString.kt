@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets
  */
 class NSString(
     /** The native handle to the NSString object */
-    val handle: MemorySegment
-) {
+    handle: MemorySegment
+) : ObjCObject(handle) {
     companion object {
         private val nsStringClass: ObjCClass by lazy {
             ObjCClass.fromName("NSString")
@@ -114,7 +114,7 @@ class NSString(
         val selector = ObjectiveCRuntime.registerSelector("characterAtIndex:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         // characterAtIndex: returns a unichar (unsigned short)
-        return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
+        return result.get(ValueLayout.JAVA_CHAR, 0)
     }
     
     /**

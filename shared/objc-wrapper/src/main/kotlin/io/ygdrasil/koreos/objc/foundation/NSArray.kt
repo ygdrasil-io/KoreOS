@@ -15,8 +15,8 @@ import java.nio.charset.StandardCharsets
  */
 class NSArray(
     /** The native handle to the NSArray object */
-    val handle: MemorySegment
-) {
+    handle: MemorySegment
+) : ObjCObject(handle) {
     companion object {
         private val nsArrayClass: ObjCClass by lazy {
             ObjCClass.fromName("NSArray")
