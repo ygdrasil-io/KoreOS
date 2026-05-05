@@ -361,8 +361,8 @@ object ObjectiveCRuntime {
         // This is a limitation of the current implementation
         // For now, we'll box the integer in a MemorySegment and pass it as a pointer
         // This won't work for all methods, but it's a placeholder
-        val argSegment = globalArena.allocate(ValueLayout.JAVA_INT)
-        argSegment.set(ValueLayout.JAVA_INT, 0, arg.toLong())
+        val argSegment = globalArena.allocate(ValueLayout.JAVA_LONG)
+        argSegment.set(ValueLayout.JAVA_LONG, 0, arg.toLong())
         return objc_msgSend.invoke(receiver, selector, argSegment) as MemorySegment
     }
     
