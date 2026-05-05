@@ -1,0 +1,143 @@
+// SPDX-License-Identifier: MIT
+package io.ygdrasil.koreos.objc
+
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
+
+/**
+ * Unit tests for ObjectiveCRuntime.
+ */
+class ObjectiveCRuntimeTest {
+    
+    @BeforeEach
+    fun setUp() {
+        // Reset the runtime before each test
+        ObjectiveCRuntime.reset()
+    }
+    
+    @AfterEach
+    fun tearDown() {
+        // Reset the runtime after each test
+        ObjectiveCRuntime.reset()
+    }
+    
+    @Test
+    fun `test isFFMSupported`() {
+        assertTrue(ObjectiveCRuntime.isFFMSupported())
+    }
+    
+    @Test
+    fun `test isNotInitialized initially`() {
+        assertFalse(ObjectiveCRuntime.isInitialized())
+    }
+    
+    @Test
+    fun `test initialize succeeds`() {
+        ObjectiveCRuntime.initialize()
+        assertTrue(ObjectiveCRuntime.isInitialized())
+    }
+    
+    @Test
+    fun `test initialize is idempotent`() {
+        ObjectiveCRuntime.initialize()
+        ObjectiveCRuntime.initialize()
+        assertTrue(ObjectiveCRuntime.isInitialized())
+    }
+    
+    @Test
+    fun `test ensureInitialized throws when not initialized`() {
+        assertThrows<ObjCInitializationException> {
+            ObjectiveCRuntime.ensureInitialized()
+        }
+    }
+    
+    @Test
+    fun `test ensureInitialized succeeds when initialized`() {
+        ObjectiveCRuntime.initialize()
+        // Should not throw
+        ObjectiveCRuntime.ensureInitialized()
+    }
+    
+    @Test
+    fun `test getClass for NSString`() {
+        ObjectiveCRuntime.initialize()
+        
+        val nsStringClass = ObjectiveCRuntime.getClass("NSString")
+        assertNotEquals(null, nsStringClass)
+        assertNotEquals(MemorySegment.NULL, nsStringClass)
+    }
+    
+    @Test
+    fun `test getClass for NSArray`() {
+        ObjectiveCRuntime.initialize()
+        
+        val nsArrayClass = ObjectiveCRuntime.getClass("NSArray")
+        assertNotEquals(null, nsArrayClass)
+        assertNotEquals(MemorySegment.NULL, nsArrayClass)
+    }
+    
+    @Test
+    fun `test getClass for NSNumber`() {
+        ObjectiveCRuntime.initialize()
+        
+        val nsNumberClass = ObjectiveCRuntime.getClass("NSNumber")
+        assertNotEquals(null, nsNumberClass)
+        assertNotEquals(MemorySegment.NULL, nsNumberClass)
+    }
+    
+    @Test
+    fun `test getClassName`() {
+        ObjectiveCRuntime.initialize()
+        
+        val nsStringClass = ObjectiveCRuntime.getClass("NSString")
+        val className = ObjectiveCRuntime.getClassName(nsStringClass)
+        assertEquals("NSString", className)
+    }
+    
+    @Test
+    fun `test registerSelector`() {
+        ObjectiveCRuntime.initialize()
+        
+        val selector = ObjectiveCRuntime.registerSelector("alloc")
+        assertNotEquals(null, selector)
+        assertNotEquals(MemorySegment.NULL, selector)
+    }
+    
+    @Test
+    fun `test allocateUtf8String`() {
+        ObjectiveCRuntime.initialize()
+        
+        val testString = "Hello, Objective-C!"
+        val segment = ObjectiveCRuntime.allocateUtf8String(testString)
+        assertNotEquals(null, segment)
+        assertNotEquals(MemorySegment.NULL, segment)
+        
+        // Verify the string content
+        val content = segment.getUtf8String(0)
+        assertEquals(testString, content)
+    }
+    
+    @Test
+    fun `test getMetaClass`() {
+        ObjectiveCRuntime.initialize()
+        
+        val metaClass = ObjectiveCRuntime.getMetaClass("NSObject")
+        assertNotEquals(null, metaClass)
+        assertNotEquals(MemorySegment.NULL, metaClass)
+    }
+    
+    @Test
+    fun `test isClass with class`() {
+        ObjectiveCRuntime.initialize()
+        
+        val nsStringClass = ObjectiveCRuntime.getClass("NSString")
+        val isClass = ObjectiveCRuntime.isClass(nsStringClass)
+        assertTrue(isClass)
+    }
+}
