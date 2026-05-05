@@ -2,12 +2,15 @@
 package io.ygdrasil.koreos.objc
 
 import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 
 /**
  * Represents an Objective-C object instance.
  * Provides methods for invoking instance methods, accessing properties, and managing memory.
+ * 
+ * This class is open to allow subclassing by specific Objective-C types like NSString, NSArray, etc.
  */
-class ObjCObject(
+open class ObjCObject(
     /** The native handle to the object */
     val handle: MemorySegment
 ) {
@@ -28,7 +31,7 @@ class ObjCObject(
     /**
      * Get the class of this object.
      */
-    fun getClass(): ObjCClass {
+    open fun getClass(): ObjCClass {
         return ObjCClass.fromObject(this)
     }
     
@@ -37,7 +40,7 @@ class ObjCObject(
      * @param methodName The name of the method to invoke
      * @return The return value as an ObjCObject, or null if the return type is void
      */
-    fun invokeMethod(methodName: String): ObjCObject? {
+    open fun invokeMethod(methodName: String): ObjCObject? {
         ObjectiveCRuntime.ensureInitialized()
         
         val selector = ObjectiveCRuntime.registerSelector(methodName)
@@ -56,7 +59,7 @@ class ObjCObject(
      * @param arg The MemorySegment argument
      * @return The return value as an ObjCObject, or null if the return type is void
      */
-    fun invokeMethod(methodName: String, arg: MemorySegment): ObjCObject? {
+    open fun invokeMethod(methodName: String, arg: MemorySegment): ObjCObject? {
         ObjectiveCRuntime.ensureInitialized()
         
         val selector = ObjectiveCRuntime.registerSelector(methodName)
@@ -75,7 +78,26 @@ class ObjCObject(
      * @param arg The integer argument
      * @return The return value as an ObjCObject, or null if the return type is void
      */
-    fun invokeMethod(methodName: String, arg: Int): ObjCObject? {
+    open fun invokeMethod(methodName: String, arg: Int): ObjCObject? {
+        ObjectiveCRuntime.ensureInitialized()
+        
+        val selector = ObjectiveCRuntime.registerSelector(methodName)
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, arg)
+        
+        if (result == MemorySegment.NULL) {
+            return null
+        }
+        
+        return ObjCObject(result)
+    }
+    
+    /**
+     * Invoke an instance method on this object with a long argument.
+     * @param methodName The name of the method to invoke
+     * @param arg The long argument
+     * @return The return value as an ObjCObject, or null if the return type is void
+     */
+    open fun invokeMethod(methodName: String, arg: Long): ObjCObject? {
         ObjectiveCRuntime.ensureInitialized()
         
         val selector = ObjectiveCRuntime.registerSelector(methodName)
@@ -94,7 +116,7 @@ class ObjCObject(
      * @param propertyName The name of the property
      * @return The property value as an ObjCObject
      */
-    fun getProperty(propertyName: String): ObjCObject? {
+    open fun getProperty(propertyName: String): ObjCObject? {
         // For simple properties, the getter has the same name as the property
         return invokeMethod(propertyName)
     }
@@ -103,44 +125,51 @@ class ObjCObject(
      * Set the value of a property.
      * This calls the setter method for the property.
      * @param propertyName The name of the property
-     * @param value The value to set (must be an ObjCObject or convertible)
+     * @param value The value to set (must be an ObjCObject)
      */
-    fun setProperty(propertyName: String, value: ObjCObject) {
+    open fun setProperty(propertyName: String, value: ObjCObject) {
         // Setter name format: setPropertyName:
         val setterName = "set${propertyName.capitalize()}:"
-        invokeMethod(setterName, value)
+        invokeMethod(setterName, value.handle)
     }
     
     /**
      * Set the value of a property with a Kotlin String.
      */
-    fun setProperty(propertyName: String, value: String) {
-        val nsString = NSString.fromString(value)
-        setProperty(propertyName, nsString)
+    open fun setProperty(propertyName: String, value: String) {
+        // Import here to avoid circular dependency
+        val nsStringClass = ObjCClass.fromName("NSString")
+        val selector = ObjectiveCRuntime.registerSelector("stringWithUTF8String:")
+        val utf8String = ObjectiveCRuntime.allocateUtf8String(value)
+        val stringHandle = ObjectiveCRuntime.sendMessage(nsStringClass.handle, selector, utf8String)
+        setProperty(propertyName, ObjCObject(stringHandle))
     }
     
     /**
      * Set the value of a property with a Kotlin Int.
      */
-    fun setProperty(propertyName: String, value: Int) {
-        // For primitive types, we need to box them in NSNumber
-        // This is a simplified approach
-        val nsNumber = NSNumber.fromInt(value)
-        setProperty(propertyName, nsNumber)
+    open fun setProperty(propertyName: String, value: Int) {
+        val nsNumberClass = ObjCClass.fromName("NSNumber")
+        val selector = ObjectiveCRuntime.registerSelector("numberWithInt:")
+        val numberHandle = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value)
+        setProperty(propertyName, ObjCObject(numberHandle))
     }
     
     /**
      * Set the value of a property with a Kotlin Boolean.
      */
-    fun setProperty(propertyName: String, value: Boolean) {
-        val nsNumber = NSNumber.fromBoolean(value)
-        setProperty(propertyName, nsNumber)
+    open fun setProperty(propertyName: String, value: Boolean) {
+        val nsNumberClass = ObjCClass.fromName("NSNumber")
+        val selector = ObjectiveCRuntime.registerSelector("numberWithBool:")
+        val boolValue = if (value) 1 else 0
+        val numberHandle = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, boolValue)
+        setProperty(propertyName, ObjCObject(numberHandle))
     }
     
     /**
      * Get the description of this object (calls the description method).
      */
-    fun description(): String {
+    open fun description(): String {
         val descObj = invokeMethod("description")
         return descObj?.toString() ?: "null"
     }
@@ -148,7 +177,7 @@ class ObjCObject(
     /**
      * Retain this object (increment reference count).
      */
-    fun retain(): ObjCObject {
+    open fun retain(): ObjCObject {
         ObjectiveCRuntime.ensureInitialized()
         val retainSelector = ObjectiveCRuntime.registerSelector("retain")
         val retainedHandle = ObjectiveCRuntime.sendMessage(handle, retainSelector)
@@ -158,7 +187,7 @@ class ObjCObject(
     /**
      * Release this object (decrement reference count).
      */
-    fun release() {
+    open fun release() {
         ObjectiveCRuntime.ensureInitialized()
         val releaseSelector = ObjectiveCRuntime.registerSelector("release")
         ObjectiveCRuntime.sendMessage(handle, releaseSelector)
@@ -167,7 +196,7 @@ class ObjCObject(
     /**
      * Autorelease this object.
      */
-    fun autorelease(): ObjCObject {
+    open fun autorelease(): ObjCObject {
         ObjectiveCRuntime.ensureInitialized()
         val autoreleaseSelector = ObjectiveCRuntime.registerSelector("autorelease")
         val autoreleasedHandle = ObjectiveCRuntime.sendMessage(handle, autoreleaseSelector)
@@ -177,12 +206,11 @@ class ObjCObject(
     /**
      * Check if this object is equal to another object.
      */
-    fun isEqual(other: ObjCObject): Boolean {
+    open fun isEqual(other: ObjCObject): Boolean {
         val isEqualSelector = ObjectiveCRuntime.registerSelector("isEqual:")
         val result = ObjectiveCRuntime.sendMessage(handle, isEqualSelector, other.handle)
         // In Objective-C, isEqual: returns a BOOL which is a signed char
-        // We need to extract the boolean value from the MemorySegment
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
     }
     
     /**

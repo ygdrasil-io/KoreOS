@@ -5,15 +5,17 @@ import io.ygdrasil.koreos.objc.ObjCClass
 import io.ygdrasil.koreos.objc.ObjCObject
 import io.ygdrasil.koreos.objc.ObjectiveCRuntime
 import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
+import java.nio.charset.StandardCharsets
 
 /**
  * Wrapper for the Objective-C NSString class.
  * Provides methods for creating and manipulating strings.
  */
 class NSString(
-    handle: MemorySegment
-) : ObjCObject(handle) {
-    
+    /** The native handle to the NSString object */
+    val handle: MemorySegment
+) {
     companion object {
         private val nsStringClass: ObjCClass by lazy {
             ObjCClass.fromName("NSString")
@@ -69,28 +71,35 @@ class NSString(
     }
     
     /**
+     * Get the ObjCObject representation of this string.
+     */
+    fun toObjCObject(): ObjCObject = ObjCObject(handle)
+    
+    /**
      * Convert this NSString to a Kotlin String.
      * Uses the UTF8String method.
      */
     fun toKotlinString(): String {
-        val result = invokeMethod("UTF8String")
+        val selector = ObjectiveCRuntime.registerSelector("UTF8String")
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
         
-        if (result == null || result.handle == MemorySegment.NULL) {
+        if (result == MemorySegment.NULL) {
             return ""
         }
         
         // The result is a const char*, we need to read it as a UTF-8 string
-        return result.handle.getUtf8String(0)
+        return result.getString(0, StandardCharsets.UTF_8)
     }
     
     /**
      * Get the length of the string.
      */
     fun length(): Int {
-        val result = invokeMethod("length")
+        val selector = ObjectiveCRuntime.registerSelector("length")
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
         // In Objective-C, length returns an NSUInteger (unsigned long)
         // We need to extract the integer value from the MemorySegment
-        return result?.handle?.get(ValueLayout.JAVA_LONG, 0)?.toInt() ?: 0
+        return result.get(ValueLayout.ofLong(), 0).toInt()
     }
     
     /**
@@ -105,9 +114,7 @@ class NSString(
         val selector = ObjectiveCRuntime.registerSelector("characterAtIndex:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         // characterAtIndex: returns a unichar (unsigned short)
-        // The result is actually a unichar value, not a pointer
-        // We need to read it from the return value
-        return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
+        return result.get(ValueLayout.ofChar(), 0).toInt().toChar()
     }
     
     /**
@@ -126,7 +133,7 @@ class NSString(
         val selector = ObjectiveCRuntime.registerSelector("isEqualToString:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         // isEqualToString: returns a BOOL (signed char)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
     }
     
     /**
@@ -135,7 +142,7 @@ class NSString(
     fun contains(substring: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("containsString:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, substring.handle)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
     }
     
     /**
@@ -144,7 +151,7 @@ class NSString(
     fun hasPrefix(prefix: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("hasPrefix:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, prefix.handle)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
     }
     
     /**
@@ -153,23 +160,25 @@ class NSString(
     fun hasSuffix(suffix: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("hasSuffix:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, suffix.handle)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
     }
     
     /**
      * Convert to uppercase.
      */
     fun uppercaseString(): NSString {
-        val result = invokeMethod("uppercaseString")
-        return NSString(result!!.handle)
+        val selector = ObjectiveCRuntime.registerSelector("uppercaseString")
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
+        return NSString(result)
     }
     
     /**
      * Convert to lowercase.
      */
     fun lowercaseString(): NSString {
-        val result = invokeMethod("lowercaseString")
-        return NSString(result!!.handle)
+        val selector = ObjectiveCRuntime.registerSelector("lowercaseString")
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
+        return NSString(result)
     }
     
     /**
@@ -181,11 +190,6 @@ class NSString(
         val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         return NSString(result)
     }
-    
-    /**
-     * Get the class of this object.
-     */
-    override fun getClass(): ObjCClass = nsStringClass
     
     /**
      * Get a string representation.

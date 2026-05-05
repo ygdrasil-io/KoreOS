@@ -7,15 +7,16 @@ import io.ygdrasil.koreos.objc.ObjectiveCRuntime
 import java.lang.foreign.Arena
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
+import java.nio.charset.StandardCharsets
 
 /**
  * Wrapper for the Objective-C NSArray class.
  * Provides methods for creating and manipulating arrays.
  */
 class NSArray(
-    handle: MemorySegment
-) : ObjCObject(handle) {
-    
+    /** The native handle to the NSArray object */
+    val handle: MemorySegment
+) {
     companion object {
         private val nsArrayClass: ObjCClass by lazy {
             ObjCClass.fromName("NSArray")
@@ -77,12 +78,18 @@ class NSArray(
     }
     
     /**
+     * Get the ObjCObject representation of this array.
+     */
+    fun toObjCObject(): ObjCObject = ObjCObject(handle)
+    
+    /**
      * Get the number of objects in the array.
      */
     fun count(): Int {
-        val result = invokeMethod("count")
+        val selector = ObjectiveCRuntime.registerSelector("count")
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
         // count returns an NSUInteger (unsigned long)
-        return result?.handle?.get(ValueLayout.JAVA_LONG, 0)?.toInt() ?: 0
+        return result.get(ValueLayout.ofLong(), 0).toInt()
     }
     
     /**
@@ -122,7 +129,7 @@ class NSArray(
         val selector = ObjectiveCRuntime.registerSelector("containsObject:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // containsObject: returns a BOOL (signed char)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.get(ValueLayout.ofByte(), 0) != 0.toByte()
     }
     
     /**
@@ -133,7 +140,7 @@ class NSArray(
         val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // indexOfObject: returns an NSUInteger (unsigned long)
         // Returns NSNotFound if not found
-        val index = result.get(ValueLayout.JAVA_LONG, 0).toInt()
+        val index = result.get(ValueLayout.ofLong(), 0).toInt()
         return if (index == Int.MAX_VALUE) -1 else index
     }
     
@@ -156,18 +163,13 @@ class NSArray(
     }
     
     /**
-     * Get the class of this object.
-     */
-    override fun getClass(): ObjCClass = nsArrayClass
-    
-    /**
      * Get a string representation.
      */
     override fun toString(): String {
         val objects = toList()
         val stringObjects = objects.map { 
-            if (it is NSString) it.toKotlinString() 
-            else it.getClass().name 
+            if (it.handle == handle) "(this)" 
+            else "ObjCObject(${it.handle})"
         }
         return "NSArray($stringObjects)"
     }
@@ -175,9 +177,6 @@ class NSArray(
 
 /**
  * Wrapper for NSRange structure.
- * Note: This is a simplified implementation. For actual native calls,
- * the range should be passed as separate location and length parameters,
- * or allocated in a global arena.
  */
 class NSRange(
     val location: Int,
@@ -196,8 +195,8 @@ class NSRange(
      */
     val handle: MemorySegment by lazy {
         val segment = ObjectiveCRuntime.globalArena.allocate(16) // 2 * sizeof(NSUInteger)
-        segment.set(ValueLayout.JAVA_LONG, 0, location.toLong())
-        segment.set(ValueLayout.JAVA_LONG, 8, length.toLong())
+        segment.set(ValueLayout.ofLong(), 0, location.toLong())
+        segment.set(ValueLayout.ofLong(), 8, length.toLong())
         segment
     }
 }
