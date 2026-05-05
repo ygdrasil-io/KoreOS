@@ -3,7 +3,6 @@ package io.ygdrasil.koreos.objc
 
 import java.lang.foreign.*
 import java.lang.invoke.MethodHandle
-import java.lang.invoke.MethodType
 import java.nio.file.Path
 
 /**
@@ -38,8 +37,10 @@ object ObjectiveCRuntime {
     private lateinit var ivar_getName: MethodHandle
     private lateinit var ivar_getTypeEncoding: MethodHandle
     
-    // objc_msgSend handles - these have variable signatures
-    private val msgSendHandles: MutableMap<String, MethodHandle> = mutableMapOf()
+    // objc_msgSend handles
+    private lateinit var objc_msgSend: MethodHandle
+    private lateinit var objc_msgSend_int: MethodHandle
+    private lateinit var objc_msgSend_long: MethodHandle
     
     // Function descriptors
     private val OBJC_GET_CLASS_DESC = FunctionDescriptor.of(
@@ -60,6 +61,26 @@ object ObjectiveCRuntime {
     private val OBJECT_GET_CLASS_DESC = FunctionDescriptor.of(
         ValueLayout.ADDRESS,  // Class
         ValueLayout.ADDRESS   // id (object)
+    )
+    
+    private val OBJC_MSG_SEND_DESC = FunctionDescriptor.of(
+        ValueLayout.ADDRESS,  // id return
+        ValueLayout.ADDRESS,  // id self
+        ValueLayout.ADDRESS   // SEL op
+    )
+    
+    private val OBJC_MSG_SEND_INT_DESC = FunctionDescriptor.of(
+        ValueLayout.ADDRESS,  // id return
+        ValueLayout.ADDRESS,  // id self
+        ValueLayout.ADDRESS,  // SEL op
+        ValueLayout.JAVA_INT   // int arg
+    )
+    
+    private val OBJC_MSG_SEND_LONG_DESC = FunctionDescriptor.of(
+        ValueLayout.ADDRESS,  // id return
+        ValueLayout.ADDRESS,  // id self
+        ValueLayout.ADDRESS,  // SEL op
+        ValueLayout.JAVA_LONG  // long arg
     )
     
     @Volatile
@@ -159,6 +180,11 @@ object ObjectiveCRuntime {
             object_setIvar = resolveSymbol("object_setIvar", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS))
             ivar_getName = resolveSymbol("ivar_getName", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
             ivar_getTypeEncoding = resolveSymbol("ivar_getTypeEncoding", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
+            
+            // Resolve objc_msgSend variants
+            objc_msgSend = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_DESC)
+            objc_msgSend_int = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_INT_DESC)
+            objc_msgSend_long = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_LONG_DESC)
             
             println("[ObjectiveCRuntime] All required symbols resolved")
             
@@ -304,52 +330,36 @@ object ObjectiveCRuntime {
     }
     
     /**
-     * Send a message to an Objective-C object or class.
-     * This is the core method for invoking Objective-C methods.
-     * 
-     * @param receiver The object or class to send the message to
-     * @param selector The selector (method name)
-     * @param args Variable arguments for the method
-     * @return The return value as a MemorySegment
+     * Send a message to an Objective-C object or class with no arguments.
      */
-    fun sendMessage(receiver: MemorySegment, selector: MemorySegment, vararg args: Any?): MemorySegment {
+    fun sendMessage(receiver: MemorySegment, selector: MemorySegment): MemorySegment {
         ensureInitialized()
-        
-        // For objc_msgSend, we need to handle the variable arguments
-        // This is complex with FFM, so we use a simplified approach for now
-        // In a full implementation, we would need to:
-        // 1. Determine the method signature
-        // 2. Allocate memory for arguments
-        // 3. Copy arguments to native memory
-        // 4. Call the appropriate objc_msgSend variant
-        
-        // For now, we'll use a basic approach that works for methods with no arguments
-        // or simple return types
-        if (args.isEmpty()) {
-            // Simple case: no arguments
-            val msgSend = getMsgSendHandle("@0:0") // @ is id, 0 is no args
-            return msgSend.invoke(receiver, selector) as MemorySegment
-        }
-        
-        // For methods with arguments, we need a more complex approach
-        // This is a placeholder - a full implementation would need to handle
-        // type encodings and proper argument marshaling
-        throw ObjCMethodInvocationException(
-            "Message sending with arguments not yet fully implemented. " +
-            "Use specialized methods for common cases."
-        )
+        return objc_msgSend.invoke(receiver, selector) as MemorySegment
     }
     
     /**
-     * Get or create a msgSend handle for a specific signature.
+     * Send a message to an Objective-C object or class with a MemorySegment argument.
      */
-    private fun getMsgSendHandle(signature: String): MethodHandle {
-        return msgSendHandles.getOrPut(signature) {
-            // For simplicity, we use the basic objc_msgSend
-            // In a full implementation, we would look up the appropriate variant
-            // based on the signature (objc_msgSend, objc_msgSend_stret, etc.)
-            resolveSymbol("objc_msgSend", OBJC_MSG_SEND_DESC)
-        }
+    fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: MemorySegment): MemorySegment {
+        ensureInitialized()
+        // objc_msgSend with one object argument
+        return objc_msgSend.invoke(receiver, selector, arg) as MemorySegment
+    }
+    
+    /**
+     * Send a message to an Objective-C object or class with an integer argument.
+     */
+    fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: Int): MemorySegment {
+        ensureInitialized()
+        return objc_msgSend_int.invoke(receiver, selector, arg) as MemorySegment
+    }
+    
+    /**
+     * Send a message to an Objective-C object or class with a long argument.
+     */
+    fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: Long): MemorySegment {
+        ensureInitialized()
+        return objc_msgSend_long.invoke(receiver, selector, arg) as MemorySegment
     }
     
     /**
@@ -359,6 +369,5 @@ object ObjectiveCRuntime {
     @JvmStatic
     fun reset() {
         initialized = false
-        // Note: We don't reset the arena or method handles to avoid use-after-free issues
     }
 }

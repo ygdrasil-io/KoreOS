@@ -33,16 +33,53 @@ class ObjCObject(
     }
     
     /**
-     * Invoke an instance method on this object.
+     * Invoke an instance method on this object with no arguments.
      * @param methodName The name of the method to invoke
-     * @param args Arguments for the method
      * @return The return value as an ObjCObject, or null if the return type is void
      */
-    fun invokeMethod(methodName: String, vararg args: Any?): ObjCObject? {
+    fun invokeMethod(methodName: String): ObjCObject? {
         ObjectiveCRuntime.ensureInitialized()
         
         val selector = ObjectiveCRuntime.registerSelector(methodName)
-        val result = ObjectiveCRuntime.sendMessage(handle, selector, *args)
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
+        
+        if (result == MemorySegment.NULL) {
+            return null
+        }
+        
+        return ObjCObject(result)
+    }
+    
+    /**
+     * Invoke an instance method on this object with a MemorySegment argument.
+     * @param methodName The name of the method to invoke
+     * @param arg The MemorySegment argument
+     * @return The return value as an ObjCObject, or null if the return type is void
+     */
+    fun invokeMethod(methodName: String, arg: MemorySegment): ObjCObject? {
+        ObjectiveCRuntime.ensureInitialized()
+        
+        val selector = ObjectiveCRuntime.registerSelector(methodName)
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, arg)
+        
+        if (result == MemorySegment.NULL) {
+            return null
+        }
+        
+        return ObjCObject(result)
+    }
+    
+    /**
+     * Invoke an instance method on this object with an integer argument.
+     * @param methodName The name of the method to invoke
+     * @param arg The integer argument
+     * @return The return value as an ObjCObject, or null if the return type is void
+     */
+    fun invokeMethod(methodName: String, arg: Int): ObjCObject? {
+        ObjectiveCRuntime.ensureInitialized()
+        
+        val selector = ObjectiveCRuntime.registerSelector(methodName)
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, arg)
         
         if (result == MemorySegment.NULL) {
             return null

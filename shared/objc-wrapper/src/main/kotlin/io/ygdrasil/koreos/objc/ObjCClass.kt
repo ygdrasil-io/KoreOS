@@ -68,7 +68,7 @@ class ObjCClass(
         // Get the alloc selector
         val allocSelector = ObjectiveCRuntime.registerSelector("alloc")
         
-        // Send alloc message to the class
+        // Send alloc message to the class (no arguments)
         val instanceHandle = ObjectiveCRuntime.sendMessage(handle, allocSelector)
         
         if (instanceHandle == MemorySegment.NULL) {
@@ -78,7 +78,7 @@ class ObjCClass(
         // Get the init selector
         val initSelector = ObjectiveCRuntime.registerSelector("init")
         
-        // Send init message to the instance
+        // Send init message to the instance (no arguments)
         val initializedHandle = ObjectiveCRuntime.sendMessage(instanceHandle, initSelector)
         
         if (initializedHandle == MemorySegment.NULL) {
@@ -107,16 +107,15 @@ class ObjCClass(
     }
     
     /**
-     * Invoke a class method (static method).
+     * Invoke a class method (static method) with no arguments.
      * @param methodName The name of the class method
-     * @param args Arguments for the method
      * @return The return value as an ObjCObject, or null if the return type is void
      */
-    fun invokeClassMethod(methodName: String, vararg args: Any?): ObjCObject? {
+    fun invokeClassMethod(methodName: String): ObjCObject? {
         ObjectiveCRuntime.ensureInitialized()
         
         val selector = ObjectiveCRuntime.registerSelector(methodName)
-        val result = ObjectiveCRuntime.sendMessage(handle, selector, *args)
+        val result = ObjectiveCRuntime.sendMessage(handle, selector)
         
         if (result == MemorySegment.NULL) {
             return null

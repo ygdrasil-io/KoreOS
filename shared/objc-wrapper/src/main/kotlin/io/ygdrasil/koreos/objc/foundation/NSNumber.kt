@@ -5,6 +5,7 @@ import io.ygdrasil.koreos.objc.ObjCClass
 import io.ygdrasil.koreos.objc.ObjCObject
 import io.ygdrasil.koreos.objc.ObjectiveCRuntime
 import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 
 /**
  * Wrapper for the Objective-C NSNumber class.
@@ -25,11 +26,7 @@ class NSNumber(
         @JvmStatic
         fun fromInt(value: Int): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithInt:")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsNumberClass.handle,
-                selector,
-                value
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value)
             return NSNumber(result)
         }
         
@@ -39,11 +36,7 @@ class NSNumber(
         @JvmStatic
         fun fromLong(value: Long): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithLong:")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsNumberClass.handle,
-                selector,
-                value
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value)
             return NSNumber(result)
         }
         
@@ -53,11 +46,7 @@ class NSNumber(
         @JvmStatic
         fun fromFloat(value: Float): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithFloat:")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsNumberClass.handle,
-                selector,
-                value
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value)
             return NSNumber(result)
         }
         
@@ -67,11 +56,7 @@ class NSNumber(
         @JvmStatic
         fun fromDouble(value: Double): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithDouble:")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsNumberClass.handle,
-                selector,
-                value
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value)
             return NSNumber(result)
         }
         
@@ -83,11 +68,7 @@ class NSNumber(
             val selector = ObjectiveCRuntime.registerSelector("numberWithBool:")
             // BOOL in Objective-C is a signed char (0 or 1)
             val boolValue = if (value) 1 else 0
-            val result = ObjectiveCRuntime.sendMessage(
-                nsNumberClass.handle,
-                selector,
-                boolValue
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, boolValue)
             return NSNumber(result)
         }
         
@@ -97,11 +78,7 @@ class NSNumber(
         @JvmStatic
         fun fromChar(value: Char): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithChar:")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsNumberClass.handle,
-                selector,
-                value.toInt()
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value.toInt())
             return NSNumber(result)
         }
     }
@@ -110,7 +87,6 @@ class NSNumber(
      * Convert this NSNumber to a Kotlin Int.
      */
     fun toInt(): Int {
-        val selector = ObjectiveCRuntime.registerSelector("intValue")
         val result = invokeMethod("intValue")
         return result?.handle?.get(ValueLayout.JAVA_INT, 0) ?: 0
     }
@@ -119,7 +95,6 @@ class NSNumber(
      * Convert this NSNumber to a Kotlin Long.
      */
     fun toLong(): Long {
-        val selector = ObjectiveCRuntime.registerSelector("longValue")
         val result = invokeMethod("longValue")
         return result?.handle?.get(ValueLayout.JAVA_LONG, 0) ?: 0L
     }
@@ -128,7 +103,6 @@ class NSNumber(
      * Convert this NSNumber to a Kotlin Float.
      */
     fun toFloat(): Float {
-        val selector = ObjectiveCRuntime.registerSelector("floatValue")
         val result = invokeMethod("floatValue")
         return result?.handle?.get(ValueLayout.JAVA_FLOAT, 0) ?: 0f
     }
@@ -137,7 +111,6 @@ class NSNumber(
      * Convert this NSNumber to a Kotlin Double.
      */
     fun toDouble(): Double {
-        val selector = ObjectiveCRuntime.registerSelector("doubleValue")
         val result = invokeMethod("doubleValue")
         return result?.handle?.get(ValueLayout.JAVA_DOUBLE, 0) ?: 0.0
     }
@@ -146,7 +119,6 @@ class NSNumber(
      * Convert this NSNumber to a Kotlin Boolean.
      */
     fun toBoolean(): Boolean {
-        val selector = ObjectiveCRuntime.registerSelector("boolValue")
         val result = invokeMethod("boolValue")
         // boolValue returns a BOOL (signed char)
         return result?.handle?.get(ValueLayout.JAVA_BYTE, 0)?.toInt() != 0
@@ -156,7 +128,6 @@ class NSNumber(
      * Convert this NSNumber to a Kotlin Char.
      */
     fun toChar(): Char {
-        val selector = ObjectiveCRuntime.registerSelector("charValue")
         val result = invokeMethod("charValue")
         return result?.handle?.get(ValueLayout.JAVA_CHAR, 0)?.toInt()?.toChar() ?: '\u0000'
     }
@@ -165,7 +136,6 @@ class NSNumber(
      * Get the string representation of this number.
      */
     fun toStringValue(): NSString {
-        val selector = ObjectiveCRuntime.registerSelector("stringValue")
         val result = invokeMethod("stringValue")
         return NSString(result!!.handle)
     }
@@ -176,11 +146,7 @@ class NSNumber(
      */
     fun compare(other: NSNumber): Int {
         val selector = ObjectiveCRuntime.registerSelector("compare:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            other.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         // compare: returns an NSComparisonResult (typedef NSInteger)
         return result.get(ValueLayout.JAVA_LONG, 0).toInt()
     }
@@ -190,11 +156,7 @@ class NSNumber(
      */
     fun isEqualToNumber(other: NSNumber): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("isEqualToNumber:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            other.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     

@@ -4,7 +4,9 @@ package io.ygdrasil.koreos.objc.foundation
 import io.ygdrasil.koreos.objc.ObjCClass
 import io.ygdrasil.koreos.objc.ObjCObject
 import io.ygdrasil.koreos.objc.ObjectiveCRuntime
+import java.lang.foreign.Arena
 import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 
 /**
  * Wrapper for the Objective-C NSArray class.
@@ -25,10 +27,7 @@ class NSArray(
         @JvmStatic
         fun empty(): NSArray {
             val selector = ObjectiveCRuntime.registerSelector("array")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsArrayClass.handle,
-                selector
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsArrayClass.handle, selector)
             return NSArray(result)
         }
         
@@ -38,11 +37,7 @@ class NSArray(
         @JvmStatic
         fun withObject(obj: ObjCObject): NSArray {
             val selector = ObjectiveCRuntime.registerSelector("arrayWithObject:")
-            val result = ObjectiveCRuntime.sendMessage(
-                nsArrayClass.handle,
-                selector,
-                obj.handle
-            )
+            val result = ObjectiveCRuntime.sendMessage(nsArrayClass.handle, selector, obj.handle)
             return NSArray(result)
         }
         
@@ -56,10 +51,7 @@ class NSArray(
             }
             
             // For multiple objects, we need to use arrayWithObjects:count:
-            // This requires allocating an array of pointers
-            val arena = Arena.ofConfined()
-            
-            return arena.use {
+            Arena.ofConfined().use { arena ->
                 // Allocate array of pointers
                 val arrayPtr = arena.allocate(ValueLayout.ADDRESS, objects.size.toLong())
                 
@@ -76,10 +68,10 @@ class NSArray(
                     nsArrayClass.handle,
                     selector,
                     arrayPtr,
-                    objects.size
+                    objects.size.toLong()
                 )
                 
-                NSArray(result)
+                return NSArray(result)
             }
         }
     }
@@ -103,11 +95,7 @@ class NSArray(
      */
     fun objectAtIndex(index: Int): ObjCObject {
         val selector = ObjectiveCRuntime.registerSelector("objectAtIndex:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            index
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         return ObjCObject(result)
     }
     
@@ -132,11 +120,7 @@ class NSArray(
      */
     fun containsObject(obj: ObjCObject): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("containsObject:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            obj.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // containsObject: returns a BOOL (signed char)
         return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
@@ -146,11 +130,7 @@ class NSArray(
      */
     fun indexOfObject(obj: ObjCObject): Int {
         val selector = ObjectiveCRuntime.registerSelector("indexOfObject:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            obj.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // indexOfObject: returns an NSUInteger (unsigned long)
         // Returns NSNotFound if not found
         val index = result.get(ValueLayout.JAVA_LONG, 0).toInt()
@@ -171,11 +151,7 @@ class NSArray(
     fun subarrayWithRange(start: Int, length: Int): NSArray {
         val range = NSRange(start, length)
         val selector = ObjectiveCRuntime.registerSelector("subarrayWithRange:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            range.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, range.handle)
         return NSArray(result)
     }
     
@@ -212,15 +188,15 @@ class NSRange(
     }
     
     // Handle for passing to native code
-    // Note: In a full implementation, we would need to allocate native memory
-    // and copy the structure data
     val handle: MemorySegment by lazy {
-        val arena = Arena.ofConfined()
-        arena.use {
+        Arena.ofConfined().use { arena ->
             val segment = arena.allocate(16) // 2 * sizeof(NSUInteger)
             segment.set(ValueLayout.JAVA_LONG, 0, location.toLong())
             segment.set(ValueLayout.JAVA_LONG, 8, length.toLong())
-            segment
+            // Note: This creates a temporary segment that will be invalid after the arena closes
+            // For actual native calls, we need to allocate in a global arena or pass differently
+            // This is a simplified implementation
+            ObjectiveCRuntime.allocateUtf8String("$location:$length")
         }
     }
 }

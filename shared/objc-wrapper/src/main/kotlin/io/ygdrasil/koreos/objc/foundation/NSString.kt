@@ -33,7 +33,7 @@ class NSString(
             // Get the stringWithUTF8String: selector
             val selector = ObjectiveCRuntime.registerSelector("stringWithUTF8String:")
             
-            // Send the message to the NSString class
+            // Send the message to the NSString class with MemorySegment argument
             val result = ObjectiveCRuntime.sendMessage(
                 nsStringClass.handle, 
                 selector,
@@ -58,19 +58,13 @@ class NSString(
         /**
          * Create an NSString with a format string.
          * Note: This is a simplified version that doesn't handle format arguments.
+         * For now, it just creates a string from the format without arguments.
          */
         @JvmStatic
-        fun format(format: String, vararg args: Any): NSString {
-            // For simplicity, we'll just use stringWithFormat: with the format string
-            // A full implementation would need to handle the varargs properly
-            val selector = ObjectiveCRuntime.registerSelector("stringWithFormat:")
-            val formatSegment = ObjectiveCRuntime.allocateUtf8String(format)
-            val result = ObjectiveCRuntime.sendMessage(
-                nsStringClass.handle,
-                selector,
-                formatSegment
-            )
-            return NSString(result)
+        fun format(format: String): NSString {
+            // Simplified: just use the format string as-is
+            // A full implementation would need to handle varargs with objc_msgSend
+            return fromString(format)
         }
     }
     
@@ -79,7 +73,6 @@ class NSString(
      * Uses the UTF8String method.
      */
     fun toKotlinString(): String {
-        val utf8Selector = ObjectiveCRuntime.registerSelector("UTF8String")
         val result = invokeMethod("UTF8String")
         
         if (result == null || result.handle == MemorySegment.NULL) {
@@ -110,11 +103,7 @@ class NSString(
      */
     fun charAt(index: Int): Char {
         val selector = ObjectiveCRuntime.registerSelector("characterAtIndex:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            index
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         // characterAtIndex: returns a unichar (unsigned short)
         return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
     }
@@ -124,11 +113,7 @@ class NSString(
      */
     fun plus(other: NSString): NSString {
         val selector = ObjectiveCRuntime.registerSelector("stringByAppendingString:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            other.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         return NSString(result)
     }
     
@@ -137,11 +122,7 @@ class NSString(
      */
     fun isEqualToString(other: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("isEqualToString:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            other.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         // isEqualToString: returns a BOOL (signed char)
         return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
@@ -151,11 +132,7 @@ class NSString(
      */
     fun contains(substring: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("containsString:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            substring.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, substring.handle)
         return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
@@ -164,11 +141,7 @@ class NSString(
      */
     fun hasPrefix(prefix: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("hasPrefix:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            prefix.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, prefix.handle)
         return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
@@ -177,11 +150,7 @@ class NSString(
      */
     fun hasSuffix(suffix: NSString): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("hasSuffix:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            suffix.handle
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, suffix.handle)
         return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
     }
     
@@ -189,7 +158,6 @@ class NSString(
      * Convert to uppercase.
      */
     fun uppercaseString(): NSString {
-        val selector = ObjectiveCRuntime.registerSelector("uppercaseString")
         val result = invokeMethod("uppercaseString")
         return NSString(result!!.handle)
     }
@@ -198,7 +166,6 @@ class NSString(
      * Convert to lowercase.
      */
     fun lowercaseString(): NSString {
-        val selector = ObjectiveCRuntime.registerSelector("lowercaseString")
         val result = invokeMethod("lowercaseString")
         return NSString(result!!.handle)
     }
@@ -209,11 +176,7 @@ class NSString(
      */
     fun substringFromIndex(index: Int): NSString {
         val selector = ObjectiveCRuntime.registerSelector("substringFromIndex:")
-        val result = ObjectiveCRuntime.sendMessage(
-            handle,
-            selector,
-            index
-        )
+        val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         return NSString(result)
     }
     
