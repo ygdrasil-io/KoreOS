@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 package io.ygdrasil.koreos.objc
 
+import java.lang.foreign.MemorySegment
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,7 +29,7 @@ class ObjCClassTest {
     
     @Test
     fun `test fromName for NSString`() {
-        val nsStringClass = ObjCClass.fromName("NSString")
+        val nsStringClass: ObjCClass = ObjCClass.fromName("NSString")
         assertNotEquals(null, nsStringClass)
         assertEquals("NSString", nsStringClass.name)
         assertTrue(nsStringClass.isValid())
@@ -36,7 +37,7 @@ class ObjCClassTest {
     
     @Test
     fun `test fromName for NSArray`() {
-        val nsArrayClass = ObjCClass.fromName("NSArray")
+        val nsArrayClass: ObjCClass = ObjCClass.fromName("NSArray")
         assertNotEquals(null, nsArrayClass)
         assertEquals("NSArray", nsArrayClass.name)
         assertTrue(nsArrayClass.isValid())
@@ -51,15 +52,15 @@ class ObjCClassTest {
     
     @Test
     fun `test fromObject`() {
-        val nsStringClass = ObjCClass.fromName("NSString")
+        val nsStringClass: ObjCClass = ObjCClass.fromName("NSString")
         val instance = nsStringClass.createInstance()
-        val cls = ObjCClass.fromObject(instance)
+        val cls: ObjCClass = ObjCClass.fromObject(instance)
         assertEquals("NSString", cls.name)
     }
     
     @Test
     fun `test getMetaClass`() {
-        val nsObjectClass = ObjCClass.fromName("NSObject")
+        val nsObjectClass: ObjCClass = ObjCClass.fromName("NSObject")
         val metaClass = nsObjectClass.getMetaClass()
         assertNotEquals(null, metaClass)
         assertTrue(metaClass.name.contains("Meta"))
@@ -67,20 +68,20 @@ class ObjCClassTest {
     
     @Test
     fun `test isMetaClass for regular class`() {
-        val nsStringClass = ObjCClass.fromName("NSString")
+        val nsStringClass: ObjCClass = ObjCClass.fromName("NSString")
         assertFalse(nsStringClass.isMetaClass())
     }
     
     @Test
     fun `test isMetaClass for metaclass`() {
-        val nsObjectClass = ObjCClass.fromName("NSObject")
+        val nsObjectClass: ObjCClass = ObjCClass.fromName("NSObject")
         val metaClass = nsObjectClass.getMetaClass()
         assertTrue(metaClass.isMetaClass())
     }
     
     @Test
     fun `test createInstance`() {
-        val nsStringClass = ObjCClass.fromName("NSString")
+        val nsStringClass: ObjCClass = ObjCClass.fromName("NSString")
         val instance = nsStringClass.createInstance()
         assertNotEquals(null, instance)
         assertTrue(instance.isValid())
@@ -88,7 +89,7 @@ class ObjCClassTest {
     
     @Test
     fun `test newInstance`() {
-        val nsStringClass = ObjCClass.fromName("NSString")
+        val nsStringClass: ObjCClass = ObjCClass.fromName("NSString")
         val instance = nsStringClass.newInstance()
         assertNotEquals(null, instance)
         assertTrue(instance.isValid())
@@ -96,7 +97,7 @@ class ObjCClassTest {
     
     @Test
     fun `test invokeClassMethod`() {
-        val nsStringClass = ObjCClass.fromName("NSString")
+        val nsStringClass: ObjCClass = ObjCClass.fromName("NSString")
         // Try to invoke a class method (this may fail depending on the method)
         // For now, we'll just test that it doesn't crash
         try {

@@ -232,6 +232,15 @@ object ObjectiveCRuntime {
     }
     
     /**
+     * Get a UTF-8 string from a MemorySegment.
+     */
+    fun getUtf8String(segment: MemorySegment): String {
+        val bytes = ByteArray(segment.byteSize().toInt() - 1) // Exclude null terminator
+        segment.copyTo(MemorySegment.ofArray(bytes))
+        return bytes.decodeToString()
+    }
+    
+    /**
      * Register an Objective-C selector and return its handle.
      */
     fun registerSelector(selectorName: String): MemorySegment {

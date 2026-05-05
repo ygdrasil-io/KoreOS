@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 package io.ygdrasil.koreos.objc
 
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -68,7 +70,7 @@ class ObjectiveCRuntimeTest {
     fun `test getClass for NSString`() {
         ObjectiveCRuntime.initialize()
         
-        val nsStringClass = ObjectiveCRuntime.getClass("NSString")
+        val nsStringClass: MemorySegment = ObjectiveCRuntime.getClass("NSString")
         assertNotEquals(null, nsStringClass)
         assertNotEquals(MemorySegment.NULL, nsStringClass)
     }
@@ -77,7 +79,7 @@ class ObjectiveCRuntimeTest {
     fun `test getClass for NSArray`() {
         ObjectiveCRuntime.initialize()
         
-        val nsArrayClass = ObjectiveCRuntime.getClass("NSArray")
+        val nsArrayClass: MemorySegment = ObjectiveCRuntime.getClass("NSArray")
         assertNotEquals(null, nsArrayClass)
         assertNotEquals(MemorySegment.NULL, nsArrayClass)
     }
@@ -86,7 +88,7 @@ class ObjectiveCRuntimeTest {
     fun `test getClass for NSNumber`() {
         ObjectiveCRuntime.initialize()
         
-        val nsNumberClass = ObjectiveCRuntime.getClass("NSNumber")
+        val nsNumberClass: MemorySegment = ObjectiveCRuntime.getClass("NSNumber")
         assertNotEquals(null, nsNumberClass)
         assertNotEquals(MemorySegment.NULL, nsNumberClass)
     }
@@ -95,7 +97,7 @@ class ObjectiveCRuntimeTest {
     fun `test getClassName`() {
         ObjectiveCRuntime.initialize()
         
-        val nsStringClass = ObjectiveCRuntime.getClass("NSString")
+        val nsStringClass: MemorySegment = ObjectiveCRuntime.getClass("NSString")
         val className = ObjectiveCRuntime.getClassName(nsStringClass)
         assertEquals("NSString", className)
     }
@@ -104,7 +106,7 @@ class ObjectiveCRuntimeTest {
     fun `test registerSelector`() {
         ObjectiveCRuntime.initialize()
         
-        val selector = ObjectiveCRuntime.registerSelector("alloc")
+        val selector: MemorySegment = ObjectiveCRuntime.registerSelector("alloc")
         assertNotEquals(null, selector)
         assertNotEquals(MemorySegment.NULL, selector)
     }
@@ -114,12 +116,12 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val testString = "Hello, Objective-C!"
-        val segment = ObjectiveCRuntime.allocateUtf8String(testString)
+        val segment: MemorySegment = ObjectiveCRuntime.allocateUtf8String(testString)
         assertNotEquals(null, segment)
         assertNotEquals(MemorySegment.NULL, segment)
         
         // Verify the string content
-        val content = segment.getUtf8String(0)
+        val content = ObjectiveCRuntime.getUtf8String(segment)
         assertEquals(testString, content)
     }
     
@@ -127,7 +129,7 @@ class ObjectiveCRuntimeTest {
     fun `test getMetaClass`() {
         ObjectiveCRuntime.initialize()
         
-        val metaClass = ObjectiveCRuntime.getMetaClass("NSObject")
+        val metaClass: MemorySegment = ObjectiveCRuntime.getMetaClass("NSObject")
         assertNotEquals(null, metaClass)
         assertNotEquals(MemorySegment.NULL, metaClass)
     }
@@ -136,7 +138,7 @@ class ObjectiveCRuntimeTest {
     fun `test isClass with class`() {
         ObjectiveCRuntime.initialize()
         
-        val nsStringClass = ObjectiveCRuntime.getClass("NSString")
+        val nsStringClass: MemorySegment = ObjectiveCRuntime.getClass("NSString")
         val isClass = ObjectiveCRuntime.isClass(nsStringClass)
         assertTrue(isClass)
     }
