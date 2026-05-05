@@ -98,7 +98,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val nsStringClass: MemorySegment = ObjectiveCRuntime.getClass("NSString")
-        val className = ObjectiveCRuntime.getClassName(nsStringClass)
+        val className: String = ObjectiveCRuntime.getClassName(nsStringClass)
         assertEquals("NSString", className)
     }
     
@@ -121,7 +121,7 @@ class ObjectiveCRuntimeTest {
         assertNotEquals(MemorySegment.NULL, segment)
         
         // Verify the string content
-        val content = ObjectiveCRuntime.getUtf8String(segment)
+        val content: String = ObjectiveCRuntime.getUtf8String(segment)
         assertEquals(testString, content)
     }
     
@@ -139,7 +139,7 @@ class ObjectiveCRuntimeTest {
         ObjectiveCRuntime.initialize()
         
         val nsStringClass: MemorySegment = ObjectiveCRuntime.getClass("NSString")
-        val isClass = ObjectiveCRuntime.isClass(nsStringClass)
+        val isClass: Boolean = ObjectiveCRuntime.isClass(nsStringClass)
         assertTrue(isClass)
     }
 }
