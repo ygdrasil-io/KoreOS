@@ -175,6 +175,9 @@ class NSArray(
 
 /**
  * Wrapper for NSRange structure.
+ * Note: This is a simplified implementation. For actual native calls,
+ * the range should be passed as separate location and length parameters,
+ * or allocated in a global arena.
  */
 class NSRange(
     val location: Int,
@@ -187,16 +190,14 @@ class NSRange(
         }
     }
     
-    // Handle for passing to native code
+    /**
+     * Get a MemorySegment representation of this range.
+     * Note: This allocates in the global arena and should be used carefully.
+     */
     val handle: MemorySegment by lazy {
-        Arena.ofConfined().use { arena ->
-            val segment = arena.allocate(16) // 2 * sizeof(NSUInteger)
-            segment.set(ValueLayout.JAVA_LONG, 0, location.toLong())
-            segment.set(ValueLayout.JAVA_LONG, 8, length.toLong())
-            // Note: This creates a temporary segment that will be invalid after the arena closes
-            // For actual native calls, we need to allocate in a global arena or pass differently
-            // This is a simplified implementation
-            ObjectiveCRuntime.allocateUtf8String("$location:$length")
-        }
+        val segment = ObjectiveCRuntime.globalArena.allocate(16) // 2 * sizeof(NSUInteger)
+        segment.set(ValueLayout.JAVA_LONG, 0, location.toLong())
+        segment.set(ValueLayout.JAVA_LONG, 8, length.toLong())
+        segment
     }
 }

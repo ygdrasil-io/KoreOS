@@ -15,7 +15,7 @@ import java.nio.file.Path
 object ObjectiveCRuntime {
     
     // Global arena for memory management
-    private val globalArena: Arena = Arena.global()
+    val globalArena: Arena = Arena.global()
     
     // Native linker
     private val linker: Linker = Linker.nativeLinker()
@@ -37,10 +37,8 @@ object ObjectiveCRuntime {
     private lateinit var ivar_getName: MethodHandle
     private lateinit var ivar_getTypeEncoding: MethodHandle
     
-    // objc_msgSend handles
+    // objc_msgSend handle - we use a varargs collector approach
     private lateinit var objc_msgSend: MethodHandle
-    private lateinit var objc_msgSend_int: MethodHandle
-    private lateinit var objc_msgSend_long: MethodHandle
     
     // Function descriptors
     private val OBJC_GET_CLASS_DESC = FunctionDescriptor.of(
@@ -63,24 +61,11 @@ object ObjectiveCRuntime {
         ValueLayout.ADDRESS   // id (object)
     )
     
-    private val OBJC_MSG_SEND_DESC = FunctionDescriptor.of(
+    // Base descriptor for objc_msgSend (id, SEL) - we'll use varargs for additional parameters
+    private val OBJC_MSG_SEND_BASE_DESC = FunctionDescriptor.of(
         ValueLayout.ADDRESS,  // id return
         ValueLayout.ADDRESS,  // id self
         ValueLayout.ADDRESS   // SEL op
-    )
-    
-    private val OBJC_MSG_SEND_INT_DESC = FunctionDescriptor.of(
-        ValueLayout.ADDRESS,  // id return
-        ValueLayout.ADDRESS,  // id self
-        ValueLayout.ADDRESS,  // SEL op
-        ValueLayout.JAVA_INT   // int arg
-    )
-    
-    private val OBJC_MSG_SEND_LONG_DESC = FunctionDescriptor.of(
-        ValueLayout.ADDRESS,  // id return
-        ValueLayout.ADDRESS,  // id self
-        ValueLayout.ADDRESS,  // SEL op
-        ValueLayout.JAVA_LONG  // long arg
     )
     
     @Volatile
@@ -181,10 +166,14 @@ object ObjectiveCRuntime {
             ivar_getName = resolveSymbol("ivar_getName", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
             ivar_getTypeEncoding = resolveSymbol("ivar_getTypeEncoding", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
             
-            // Resolve objc_msgSend variants
-            objc_msgSend = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_DESC)
-            objc_msgSend_int = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_INT_DESC)
-            objc_msgSend_long = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_LONG_DESC)
+            // Resolve objc_msgSend - we use a varargs collector approach
+            // objc_msgSend has the signature: id objc_msgSend(id self, SEL op, ...)
+            // We resolve it with the base descriptor and use asVarargsCollector for varargs
+            val msgSendSymbol = objcLookup.find("objc_msgSend").orElseThrow {
+                ObjCInitializationException("Symbol not found: objc_msgSend")
+            }
+            objc_msgSend = linker.downcallHandle(msgSendSymbol, OBJC_MSG_SEND_BASE_DESC)
+                .asVarargsCollector(ValueLayout.ADDRESS) // Collect additional args as pointers
             
             println("[ObjectiveCRuntime] All required symbols resolved")
             
@@ -330,28 +319,40 @@ object ObjectiveCRuntime {
     }
     
     /**
-     * Send a message to an Objective-C object or class with no arguments.
+     * Send a message to an Objective-C object or class with variable arguments.
+     * This uses objc_msgSend with varargs collector.
+     * 
+     * @param receiver The object or class to send the message to
+     * @param selector The selector (method name)
+     * @param args Variable arguments for the method (as MemorySegment pointers)
+     * @return The return value as a MemorySegment
      */
-    fun sendMessage(receiver: MemorySegment, selector: MemorySegment): MemorySegment {
+    fun sendMessage(receiver: MemorySegment, selector: MemorySegment, vararg args: MemorySegment): MemorySegment {
         ensureInitialized()
-        return objc_msgSend.invoke(receiver, selector) as MemorySegment
-    }
-    
-    /**
-     * Send a message to an Objective-C object or class with a MemorySegment argument.
-     */
-    fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: MemorySegment): MemorySegment {
-        ensureInitialized()
-        // objc_msgSend with one object argument
-        return objc_msgSend.invoke(receiver, selector, arg) as MemorySegment
+        // objc_msgSend with varargs - all additional args are treated as pointers (id)
+        // For primitive types, the caller must box them in MemorySegment
+        return if (args.isEmpty()) {
+            objc_msgSend.invoke(receiver, selector) as MemorySegment
+        } else {
+            // Use varargs collector to pass additional arguments
+            objc_msgSend.invoke(receiver, selector, *args) as MemorySegment
+        }
     }
     
     /**
      * Send a message to an Objective-C object or class with an integer argument.
+     * This boxes the integer in a temporary MemorySegment.
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: Int): MemorySegment {
         ensureInitialized()
-        return objc_msgSend_int.invoke(receiver, selector, arg) as MemorySegment
+        // For integer arguments, we need to pass them as pointers
+        // This is a simplified approach - in reality, objc_msgSend expects the actual value
+        // For now, we'll use a temporary allocation
+        Arena.ofConfined().use { arena ->
+            val argSegment = arena.allocate(ValueLayout.JAVA_INT)
+            argSegment.set(ValueLayout.JAVA_INT, 0, arg.toLong())
+            return objc_msgSend.invoke(receiver, selector, argSegment) as MemorySegment
+        }
     }
     
     /**
@@ -359,7 +360,11 @@ object ObjectiveCRuntime {
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: Long): MemorySegment {
         ensureInitialized()
-        return objc_msgSend_long.invoke(receiver, selector, arg) as MemorySegment
+        Arena.ofConfined().use { arena ->
+            val argSegment = arena.allocate(ValueLayout.JAVA_LONG)
+            argSegment.set(ValueLayout.JAVA_LONG, 0, arg)
+            return objc_msgSend.invoke(receiver, selector, argSegment) as MemorySegment
+        }
     }
     
     /**

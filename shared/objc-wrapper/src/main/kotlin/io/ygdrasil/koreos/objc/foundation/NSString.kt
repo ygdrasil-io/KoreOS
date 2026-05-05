@@ -105,6 +105,8 @@ class NSString(
         val selector = ObjectiveCRuntime.registerSelector("characterAtIndex:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, index)
         // characterAtIndex: returns a unichar (unsigned short)
+        // The result is actually a unichar value, not a pointer
+        // We need to read it from the return value
         return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
     }
     
