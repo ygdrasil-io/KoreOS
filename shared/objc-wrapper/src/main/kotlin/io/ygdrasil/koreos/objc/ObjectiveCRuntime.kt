@@ -119,16 +119,27 @@ object ObjectiveCRuntime {
             // Try loading libobjc.dylib
             var loaded = false
             
-            // First, try System.loadLibrary
+            // Try SymbolLookup.libraryLookup first as it's more direct
             try {
-                System.loadLibrary("objc")
-                objcLookup = SymbolLookup.loaderLookup()
+                objcLookup = SymbolLookup.libraryLookup("objc", globalArena)
                 loaded = true
-                println("[ObjectiveCRuntime] Loaded libobjc.dylib via System.loadLibrary")
-            } catch (e: UnsatisfiedLinkError) {
-                println("[ObjectiveCRuntime] System.loadLibrary failed: ${e.message}")
-            } catch (e: SecurityException) {
-                println("[ObjectiveCRuntime] System.loadLibrary failed: ${e.message}")
+                println("[ObjectiveCRuntime] Loaded libobjc via SymbolLookup.libraryLookup(\"objc\")")
+            } catch (e: Exception) {
+                println("[ObjectiveCRuntime] SymbolLookup.libraryLookup(\"objc\") failed: ${e.message}")
+            }
+
+            if (!loaded) {
+                // Try System.loadLibrary
+                try {
+                    System.loadLibrary("objc")
+                    objcLookup = SymbolLookup.loaderLookup()
+                    loaded = true
+                    println("[ObjectiveCRuntime] Loaded libobjc via System.loadLibrary(\"objc\")")
+                } catch (e: UnsatisfiedLinkError) {
+                    println("[ObjectiveCRuntime] System.loadLibrary(\"objc\") failed: ${e.message}")
+                } catch (e: SecurityException) {
+                    println("[ObjectiveCRuntime] System.loadLibrary(\"objc\") failed: ${e.message}")
+                }
             }
             
             // If not loaded, try known paths
@@ -202,7 +213,8 @@ object ObjectiveCRuntime {
             println("[ObjectiveCRuntime] Initialized successfully")
             
         } catch (e: Exception) {
-            throw ObjCInitializationException("Failed to initialize ObjectiveCRuntime", e)
+            if (e is ObjCInitializationException) throw e
+            throw ObjCInitializationException("Failed to initialize ObjectiveCRuntime: ${e.message}", e)
         }
     }
     

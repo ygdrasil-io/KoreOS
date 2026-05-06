@@ -23,6 +23,12 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 
+    // Only run these tests on macOS
+    onlyIf {
+        val os = System.getProperty("os.name").lowercase()
+        os.contains("mac") || os.contains("darwin")
+    }
+
     // Enable native access for FFM (required for Java 25+)
     val os = System.getProperty("os.name").lowercase()
     val nativeArgs = mutableListOf("--enable-native-access=ALL-UNNAMED")
