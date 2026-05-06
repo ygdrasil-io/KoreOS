@@ -89,7 +89,7 @@ class NSArray(
         val selector = ObjectiveCRuntime.registerSelector("count")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
         // count returns an NSUInteger (unsigned long)
-        return result.get(ValueLayout.JAVA_LONG, 0).toInt()
+        return result.address().toInt()
     }
     
     /**
@@ -129,7 +129,7 @@ class NSArray(
         val selector = ObjectiveCRuntime.registerSelector("containsObject:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // containsObject: returns a BOOL (signed char)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.address().toByte() != 0.toByte()
     }
     
     /**
@@ -140,7 +140,7 @@ class NSArray(
         val result = ObjectiveCRuntime.sendMessage(handle, selector, obj.handle)
         // indexOfObject: returns an NSUInteger (unsigned long)
         // Returns NSNotFound if not found
-        val index = result.get(ValueLayout.JAVA_LONG, 0).toInt()
+        val index = result.address().toInt()
         return if (index == Int.MAX_VALUE) -1 else index
     }
     

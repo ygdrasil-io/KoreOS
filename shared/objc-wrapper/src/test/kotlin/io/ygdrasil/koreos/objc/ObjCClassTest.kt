@@ -56,7 +56,8 @@ class ObjCClassTest {
         val nsStringClass: ObjCClass = ObjCClass.Companion.fromName("NSString")
         val instance = nsStringClass.createInstance()
         val cls: ObjCClass = ObjCClass.Companion.fromObject(instance)
-        assertEquals("NSString", cls.name)
+        // NSString is a class cluster, so the actual class name might vary (e.g., __NSCFConstantString)
+        assertTrue(cls.name.contains("String"), "Expected class name to contain 'String' but got ${cls.name}")
     }
     
     @Test
