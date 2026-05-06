@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -30,14 +31,14 @@ class NSStringTest {
     fun `test fromString`() {
         val testString = "Hello, Kotlin!"
         val nsString = NSString.fromString(testString)
-        assertNotEquals(null, nsString)
+        assertNotNull(nsString)
         assertTrue(nsString.isValid())
     }
     
     @Test
     fun `test empty string`() {
         val nsString = NSString.empty()
-        assertNotEquals(null, nsString)
+        assertNotNull(nsString)
         assertTrue(nsString.isValid())
         assertTrue(nsString.isEmpty())
     }

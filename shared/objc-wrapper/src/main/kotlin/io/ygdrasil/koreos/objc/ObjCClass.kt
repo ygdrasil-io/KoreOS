@@ -129,7 +129,7 @@ class ObjCClass(
      */
     fun isMetaClass(): Boolean {
         ObjectiveCRuntime.ensureInitialized()
-        return ObjectiveCRuntime.isClass(handle)
+        return ObjectiveCRuntime.isMetaClass(handle)
     }
     
     /**

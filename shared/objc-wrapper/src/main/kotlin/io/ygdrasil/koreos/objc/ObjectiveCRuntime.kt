@@ -31,6 +31,7 @@ object ObjectiveCRuntime {
     private lateinit var sel_registerName: MethodHandle
     private lateinit var sel_getUid: MethodHandle
     private lateinit var class_getName: MethodHandle
+    private lateinit var class_isMetaClass: MethodHandle
     private lateinit var object_getClass: MethodHandle
     private lateinit var object_isClass: MethodHandle
     private lateinit var object_getIvar: MethodHandle
@@ -38,8 +39,12 @@ object ObjectiveCRuntime {
     private lateinit var ivar_getName: MethodHandle
     private lateinit var ivar_getTypeEncoding: MethodHandle
     
-    // objc_msgSend handle
+    // objc_msgSend handle and symbol
     private lateinit var objc_msgSend: MethodHandle
+    private lateinit var objc_msgSend_ptr: MemorySegment
+    
+    // Cache for specialized objc_msgSend handles
+    private val msgSendHandles = mutableMapOf<List<MemoryLayout>, MethodHandle>()
     
     // Function descriptors
     private val OBJC_GET_CLASS_DESC = FunctionDescriptor.of(
@@ -114,18 +119,40 @@ object ObjectiveCRuntime {
             // Try loading libobjc.dylib
             var loaded = false
             
-            // First, try System.loadLibrary
+            // Try SymbolLookup.libraryLookup first as it's more direct
             try {
-                System.loadLibrary("objc")
-                objcLookup = linker.defaultLookup()
+                objcLookup = SymbolLookup.libraryLookup("objc", globalArena)
                 loaded = true
-                println("[ObjectiveCRuntime] Loaded libobjc.dylib via System.loadLibrary")
-            } catch (e: UnsatisfiedLinkError) {
-                println("[ObjectiveCRuntime] System.loadLibrary failed: ${e.message}")
-            } catch (e: SecurityException) {
-                println("[ObjectiveCRuntime] System.loadLibrary failed: ${e.message}")
+                println("[ObjectiveCRuntime] Loaded libobjc via SymbolLookup.libraryLookup(\"objc\")")
+            } catch (e: Exception) {
+                println("[ObjectiveCRuntime] SymbolLookup.libraryLookup(\"objc\") failed: ${e.message}")
+            }
+
+            if (!loaded) {
+                // Try System.loadLibrary
+                try {
+                    System.loadLibrary("objc")
+                    objcLookup = SymbolLookup.loaderLookup()
+                    loaded = true
+                    println("[ObjectiveCRuntime] Loaded libobjc via System.loadLibrary(\"objc\")")
+                } catch (e: UnsatisfiedLinkError) {
+                    println("[ObjectiveCRuntime] System.loadLibrary(\"objc\") failed: ${e.message}")
+                } catch (e: SecurityException) {
+                    println("[ObjectiveCRuntime] System.loadLibrary(\"objc\") failed: ${e.message}")
+                }
             }
             
+            // Try default lookup as a last resort (some symbols might be already available)
+            if (!loaded) {
+                println("[ObjectiveCRuntime] Trying Linker.nativeLinker().defaultLookup() as last resort")
+                val fallbackLookup = linker.defaultLookup()
+                if (fallbackLookup.find("objc_getClass").isPresent) {
+                    objcLookup = fallbackLookup
+                    loaded = true
+                    println("[ObjectiveCRuntime] Found symbols via Linker.nativeLinker().defaultLookup()")
+                }
+            }
+
             // If not loaded, try known paths
             if (!loaded) {
                 val knownPaths = listOf(
@@ -162,6 +189,7 @@ object ObjectiveCRuntime {
             sel_registerName = resolveSymbol("sel_registerName", SEL_REGISTER_NAME_DESC)
             sel_getUid = resolveSymbol("sel_getUid", SEL_REGISTER_NAME_DESC)
             class_getName = resolveSymbol("class_getName", CLASS_GET_NAME_DESC)
+            class_isMetaClass = resolveSymbol("class_isMetaClass", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS))
             object_getClass = resolveSymbol("object_getClass", OBJECT_GET_CLASS_DESC)
             object_isClass = resolveSymbol("object_isClass", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS))
             object_getIvar = resolveSymbol("object_getIvar", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS))
@@ -169,11 +197,17 @@ object ObjectiveCRuntime {
             ivar_getName = resolveSymbol("ivar_getName", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
             ivar_getTypeEncoding = resolveSymbol("ivar_getTypeEncoding", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
             
-            // Resolve objc_msgSend - for now, we use the base version without varargs
-            // This means we can only call methods with 0 or 1 argument directly
-            objc_msgSend = resolveSymbol("objc_msgSend", OBJC_MSG_SEND_DESC)
+            // Resolve objc_msgSend
+            objc_msgSend_ptr = objcLookup.find("objc_msgSend").orElseThrow {
+                ObjCInitializationException("Symbol not found: objc_msgSend")
+            }
+            
+            // Base version for 0 arguments
+            objc_msgSend = linker.downcallHandle(objc_msgSend_ptr, OBJC_MSG_SEND_DESC)
             
             println("[ObjectiveCRuntime] All required symbols resolved")
+            
+            initialized = true
             
             // Pre-register common selectors
             registerSelector("alloc")
@@ -187,11 +221,11 @@ object ObjectiveCRuntime {
             registerSelector("count")
             registerSelector("objectAtIndex:")
             
-            initialized = true
             println("[ObjectiveCRuntime] Initialized successfully")
             
         } catch (e: Exception) {
-            throw ObjCInitializationException("Failed to initialize ObjectiveCRuntime", e)
+            if (e is ObjCInitializationException) throw e
+            throw ObjCInitializationException("Failed to initialize ObjectiveCRuntime: ${e.message}", e)
         }
     }
     
@@ -232,6 +266,16 @@ object ObjectiveCRuntime {
     }
     
     /**
+     * Get a UTF-8 string from a MemorySegment.
+     */
+    fun getUtf8String(segment: MemorySegment): String {
+        val bytes = ByteArray(segment.byteSize().toInt() - 1) // Exclude null terminator
+        val byteBuffer = segment.asByteBuffer()
+        byteBuffer.get(bytes)
+        return bytes.decodeToString()
+    }
+    
+    /**
      * Register an Objective-C selector and return its handle.
      */
     fun registerSelector(selectorName: String): MemorySegment {
@@ -264,7 +308,16 @@ object ObjectiveCRuntime {
     fun getClassName(cls: MemorySegment): String {
         ensureInitialized()
         val namePtr = class_getName.invoke(cls) as MemorySegment
-        return namePtr.getString(0, StandardCharsets.UTF_8)
+        if (namePtr == MemorySegment.NULL) return ""
+        return namePtr.reinterpret(Long.MAX_VALUE).getString(0, StandardCharsets.UTF_8)
+    }
+    
+    /**
+     * Check if a class is a metaclass.
+     */
+    fun isMetaClass(cls: MemorySegment): Boolean {
+        ensureInitialized()
+        return class_isMetaClass.invoke(cls) as Boolean
     }
     
     /**
@@ -305,7 +358,8 @@ object ObjectiveCRuntime {
     fun getIvarName(ivar: MemorySegment): String {
         ensureInitialized()
         val namePtr = ivar_getName.invoke(ivar) as MemorySegment
-        return namePtr.getString(0, StandardCharsets.UTF_8)
+        if (namePtr == MemorySegment.NULL) return ""
+        return namePtr.reinterpret(Long.MAX_VALUE).getString(0, StandardCharsets.UTF_8)
     }
     
     /**
@@ -314,9 +368,21 @@ object ObjectiveCRuntime {
     fun getIvarTypeEncoding(ivar: MemorySegment): String {
         ensureInitialized()
         val encodingPtr = ivar_getTypeEncoding.invoke(ivar) as MemorySegment
-        return encodingPtr.getString(0, StandardCharsets.UTF_8)
+        if (encodingPtr == MemorySegment.NULL) return ""
+        return encodingPtr.reinterpret(Long.MAX_VALUE).getString(0, StandardCharsets.UTF_8)
     }
     
+    /**
+     * Get a specialized MethodHandle for objc_msgSend with the given argument layouts.
+     */
+    @Synchronized
+    private fun getMsgSendHandle(argLayouts: List<MemoryLayout>): MethodHandle {
+        return msgSendHandles.getOrPut(argLayouts) {
+            val desc = FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, *argLayouts.toTypedArray())
+            linker.downcallHandle(objc_msgSend_ptr, desc)
+        }
+    }
+
     /**
      * Send a message to an Objective-C object or class with no arguments.
      * 
@@ -339,11 +405,8 @@ object ObjectiveCRuntime {
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: MemorySegment): MemorySegment {
         ensureInitialized()
-        // For methods with one argument, we need to use a different approach
-        // since objc_msgSend is varargs. For now, we'll use a simplified approach
-        // that works for object arguments (which are passed as pointers)
-        // Note: This may not work for all cases, but it's a starting point
-        return objc_msgSend.invoke(receiver, selector, arg) as MemorySegment
+        val handle = getMsgSendHandle(listOf(ValueLayout.ADDRESS))
+        return handle.invoke(receiver, selector, arg) as MemorySegment
     }
     
     /**
@@ -356,14 +419,8 @@ object ObjectiveCRuntime {
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: Int): MemorySegment {
         ensureInitialized()
-        // For integer arguments, objc_msgSend expects the actual integer value
-        // But our descriptor only has 2 parameters (receiver, selector)
-        // This is a limitation of the current implementation
-        // For now, we'll box the integer in a MemorySegment and pass it as a pointer
-        // This won't work for all methods, but it's a placeholder
-        val argSegment = globalArena.allocate(ValueLayout.JAVA_INT)
-        argSegment.set(ValueLayout.JAVA_INT, 0, arg.toLong())
-        return objc_msgSend.invoke(receiver, selector, argSegment) as MemorySegment
+        val handle = getMsgSendHandle(listOf(ValueLayout.JAVA_INT))
+        return handle.invoke(receiver, selector, arg) as MemorySegment
     }
     
     /**
@@ -376,9 +433,8 @@ object ObjectiveCRuntime {
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg: Long): MemorySegment {
         ensureInitialized()
-        val argSegment = globalArena.allocate(ValueLayout.JAVA_LONG)
-        argSegment.set(ValueLayout.JAVA_LONG, 0, arg)
-        return objc_msgSend.invoke(receiver, selector, argSegment) as MemorySegment
+        val handle = getMsgSendHandle(listOf(ValueLayout.JAVA_LONG))
+        return handle.invoke(receiver, selector, arg) as MemorySegment
     }
     
     /**
@@ -392,11 +448,8 @@ object ObjectiveCRuntime {
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg1: MemorySegment, arg2: MemorySegment): MemorySegment {
         ensureInitialized()
-        // For methods with two arguments, we need to use a different approach
-        // This is a simplified implementation that may not work for all cases
-        // In reality, objc_msgSend is varargs and we'd need to handle this differently
-        // For now, we'll just pass the first argument
-        return objc_msgSend.invoke(receiver, selector, arg1) as MemorySegment
+        val handle = getMsgSendHandle(listOf(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
+        return handle.invoke(receiver, selector, arg1, arg2) as MemorySegment
     }
     
     /**
@@ -410,12 +463,8 @@ object ObjectiveCRuntime {
      */
     fun sendMessage(receiver: MemorySegment, selector: MemorySegment, arg1: MemorySegment, arg2: Long): MemorySegment {
         ensureInitialized()
-        // For arrayWithObjects:count: we need to pass both arguments
-        // This is a simplified implementation
-        val countSegment = globalArena.allocate(ValueLayout.JAVA_LONG)
-        countSegment.set(ValueLayout.JAVA_LONG, 0, arg2)
-        // For now, we'll just pass the first argument
-        return objc_msgSend.invoke(receiver, selector, arg1) as MemorySegment
+        val handle = getMsgSendHandle(listOf(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG))
+        return handle.invoke(receiver, selector, arg1, arg2) as MemorySegment
     }
     
 

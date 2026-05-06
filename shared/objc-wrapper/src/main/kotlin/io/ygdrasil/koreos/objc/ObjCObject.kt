@@ -129,7 +129,7 @@ open class ObjCObject(
      */
     open fun setProperty(propertyName: String, value: ObjCObject) {
         // Setter name format: setPropertyName:
-        val setterName = "set${propertyName.capitalize()}:"
+        val setterName = "set${propertyName.replaceFirstChar { it.uppercase() }}:"
         invokeMethod(setterName, value.handle)
     }
     
@@ -210,7 +210,7 @@ open class ObjCObject(
         val isEqualSelector = ObjectiveCRuntime.registerSelector("isEqual:")
         val result = ObjectiveCRuntime.sendMessage(handle, isEqualSelector, other.handle)
         // In Objective-C, isEqual: returns a BOOL which is a signed char
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.address().toByte() != 0.toByte()
     }
     
     /**

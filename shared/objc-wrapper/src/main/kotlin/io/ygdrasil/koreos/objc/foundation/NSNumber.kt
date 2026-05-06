@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets
  */
 class NSNumber(
     /** The native handle to the NSNumber object */
-    val handle: MemorySegment
-) {
+    handle: MemorySegment
+) : ObjCObject(handle) {
     companion object {
         private val nsNumberClass: ObjCClass by lazy {
             ObjCClass.fromName("NSNumber")
@@ -77,7 +77,7 @@ class NSNumber(
         @JvmStatic
         fun fromChar(value: Char): NSNumber {
             val selector = ObjectiveCRuntime.registerSelector("numberWithChar:")
-            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value.toInt())
+            val result = ObjectiveCRuntime.sendMessage(nsNumberClass.handle, selector, value.code)
             return NSNumber(result)
         }
     }
@@ -93,7 +93,7 @@ class NSNumber(
     fun toInt(): Int {
         val selector = ObjectiveCRuntime.registerSelector("intValue")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
-        return result.get(ValueLayout.JAVA_INT, 0)
+        return result.address().toInt()
     }
     
     /**
@@ -102,7 +102,7 @@ class NSNumber(
     fun toLong(): Long {
         val selector = ObjectiveCRuntime.registerSelector("longValue")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
-        return result.get(ValueLayout.JAVA_LONG, 0)
+        return result.address()
     }
     
     /**
@@ -128,7 +128,7 @@ class NSNumber(
         val selector = ObjectiveCRuntime.registerSelector("boolValue")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
         // boolValue returns a BOOL (signed char)
-        return result.get(ValueLayout.JAVA_BYTE, 0).toInt() != 0
+        return result.address().toInt() != 0
     }
     
     /**
@@ -137,7 +137,7 @@ class NSNumber(
     fun toChar(): Char {
         val selector = ObjectiveCRuntime.registerSelector("charValue")
         val result = ObjectiveCRuntime.sendMessage(handle, selector)
-        return result.get(ValueLayout.JAVA_CHAR, 0).toInt().toChar()
+        return result.address().toInt().toChar()
     }
     
     /**
@@ -157,7 +157,7 @@ class NSNumber(
         val selector = ObjectiveCRuntime.registerSelector("compare:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
         // compare: returns an NSComparisonResult (typedef NSInteger)
-        return result.get(ValueLayout.JAVA_LONG, 0).toInt()
+        return result.address().toInt()
     }
     
     /**
@@ -166,7 +166,7 @@ class NSNumber(
     fun isEqualToNumber(other: NSNumber): Boolean {
         val selector = ObjectiveCRuntime.registerSelector("isEqualToNumber:")
         val result = ObjectiveCRuntime.sendMessage(handle, selector, other.handle)
-        return result.get(ValueLayout.JAVA_BYTE, 0) != 0.toByte()
+        return result.address().toByte() != 0.toByte()
     }
     
     /**
