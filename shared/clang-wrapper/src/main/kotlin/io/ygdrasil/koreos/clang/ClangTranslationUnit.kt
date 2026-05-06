@@ -35,6 +35,32 @@ class ClangTranslationUnit internal constructor(
     }
 
     /**
+     * The root cursor for this translation unit.
+     * The root cursor represents the entire translation unit.
+     */
+    val cursor: ClangCursor by lazy {
+        val cursorHandle = ClangFFMWrapper.getTranslationUnitCursorFromHandle(handle)
+        ClangCursor(cursorHandle)
+    }
+
+    /**
+     * Gets all diagnostics for this translation unit.
+     *
+     * @return List of ClangDiagnostic objects
+     */
+    fun getDiagnostics(): List<ClangDiagnostic> {
+        val numDiags = getNumDiagnostics()
+        if (numDiags <= 0) {
+            return emptyList()
+        }
+
+        // clang_getDiagnostic has a complex signature with visitor pattern
+        // For now, we return empty list as the native function is not yet bound
+        // TODO: GRA-4 - Full implementation requires clang_getDiagnostic with visitor
+        return emptyList()
+    }
+
+    /**
      * Checks if this translation unit has been disposed.
      * @return true if disposed
      */
