@@ -142,6 +142,17 @@ object ObjectiveCRuntime {
                 }
             }
             
+            // Try default lookup as a last resort (some symbols might be already available)
+            if (!loaded) {
+                println("[ObjectiveCRuntime] Trying Linker.nativeLinker().defaultLookup() as last resort")
+                val fallbackLookup = linker.defaultLookup()
+                if (fallbackLookup.find("objc_getClass").isPresent) {
+                    objcLookup = fallbackLookup
+                    loaded = true
+                    println("[ObjectiveCRuntime] Found symbols via Linker.nativeLinker().defaultLookup()")
+                }
+            }
+
             // If not loaded, try known paths
             if (!loaded) {
                 val knownPaths = listOf(

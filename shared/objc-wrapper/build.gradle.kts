@@ -35,9 +35,16 @@ tasks.withType<Test> {
 
     // Set library path for libobjc.dylib on macOS
     if (os.contains("mac") || os.contains("darwin")) {
-        val dyldPath = System.getenv("DYLD_LIBRARY_PATH") ?: "/usr/lib"
-        environment("DYLD_LIBRARY_PATH", dyldPath)
-        nativeArgs.add("-Djava.library.path=$dyldPath")
+        val dyldPath = System.getenv("DYLD_LIBRARY_PATH")
+        if (dyldPath != null) {
+            // Include existing DYLD_LIBRARY_PATH and ensure /usr/lib is present
+            environment("DYLD_LIBRARY_PATH", "$dyldPath:/usr/lib")
+            nativeArgs.add("-Djava.library.path=$dyldPath:/usr/lib")
+        } else {
+            // If not set, use /usr/lib
+            environment("DYLD_LIBRARY_PATH", "/usr/lib")
+            nativeArgs.add("-Djava.library.path=/usr/lib")
+        }
     }
 
     jvmArgs = nativeArgs
